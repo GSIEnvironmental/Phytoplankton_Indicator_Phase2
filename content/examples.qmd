@@ -41,6 +41,16 @@ print("Hello World!")
 > Note the document format is set to `live-html` in the front matter.
 
 ```{pyodide}
+#| autorun: true
+for x in range(5):
+    print(x ** 2)
+```
+
+**Read-only Code Block**
+
+```{pyodide}
+#| autorun: true
+#| edit: false
 for x in range(5):
     print(x ** 2)
 ```
@@ -52,6 +62,17 @@ for x in range(5):
 > Note the document format is set to `live-html` in the front matter.
 
 ```{webr}
+#| autorun: true
+for (x in 1:5) {
+    print(x ** 2)
+}
+```
+
+**Read-only Code Block**
+
+```{webr}
+#| autorun: true
+#| edit: false
 for (x in 1:5) {
     print(x ** 2)
 }
