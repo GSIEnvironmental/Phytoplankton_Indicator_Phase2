@@ -6,6 +6,18 @@ filters:
   - add-code-files # https://github.com/shafayetShafee/add-code-files
 ---
 
+## Environment Variables
+
+```{python}
+import os
+
+if "POSTGRES_DATABASE" in os.environ:
+    print("Postgres database found in environment variables!")
+    print(f"Database name: {os.getenv('POSTGRES_DATABASE')}")
+else:
+    print("Postgres database not found in environment variables!")
+```
+
 ## Icons
 
 ### Bootstrap Icons

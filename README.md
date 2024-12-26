@@ -20,7 +20,12 @@ Technical documentation & reporting for the Puget Sound Partnership Phytoplankto
    The Python virtual environment needs to be activated when rendering or previewing the site. This is because Quarto uses Python kernels to run code chunks embedded within the `.qmd` documents.
 7. Install the Python requirements: `python -m pip install -r requirements.txt`
 8. Setup `renv` for R dependencies: `Rscript -e 'renv::restore()'`
-9. (*optional*) Install `pre-commit` hooks. [Pre-commit](https://pre-commit.com/) hooks are composed of linters and formatters specifically selected for this project. Pre-commit will help keep our code files clean and make sure we are following best practices before committing changes. The pre-commit package is included in our Python [requirements](./requirements.txt). Hooks will run on the current commit snapshot when executing a `git commit`. To install the hooks, run the following command: `python -m pre_commit install --install-hooks`
+9. Create a copy of the `_environment.required` file and rename it to `_environment.local`. This file is used to store environment variables that are specific to your local machine. The file is ignored by Git and should not be committed to the repository. The following environment variables are required:
+   - `POSTGRES_HOST`: The hostname of the PostgreSQL database server.
+   - `POSTGRES_PORT`: The port number of the PostgreSQL database server.
+   - `POSTGRES_DATABASE`: The name of the PostgreSQL database.
+   - `POSTGRES_USER`: The username to connect to the PostgreSQL database.
+10. (*optional*) Install `pre-commit` hooks. [Pre-commit](https://pre-commit.com/) hooks are composed of linters and formatters specifically selected for this project. Pre-commit will help keep our code files clean and make sure we are following best practices before committing changes. The pre-commit package is included in our Python [requirements](./requirements.txt). Hooks will run on the current commit snapshot when executing a `git commit`. To install the hooks, run the following command: `python -m pre_commit install --install-hooks`
 
 ### Contributing
 
@@ -73,13 +78,14 @@ The following Quarto [extensions](./_extensions/) are used in this project:
 
 ## GitHub Actions
 
-This repository uses a [self-hosted runner](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners) to render the site and publish it to GitHub Pages. The workflow is defined in the [publish.yaml](./.github/workflows/publish.yaml) file.
+This repository uses a [self-hosted runner](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners) to render the site and publish it to GitHub Pages. A self-hosted runner is used due to the need for various resources only available on the `posit` machine. The runner is configured to run on the `main` branch pushes only. The workflow is defined in the [publish.yaml](./.github/workflows/publish.yaml) file.
 
-The runner is hosted on the `posit` machine (`192.168.0.10`) and is managed by Caleb Grant (`/home/cgrant/GitHub/actions-runner`). The runner is configured to run as a service and is started automatically when the machine boots up.
-
-This repository uses a self-hosted runner due to the need for various resources only available on the `posit` machine. The runner is configured to run on the `main` branch pushes only.
+The runner is hosted on the `posit` machine (`192.168.0.10`) and is managed by Caleb Grant (`/home/cgrant@gsi-pc.local/GitHub/actions-runner`). The runner is configured to run as a service and is started automatically when the machine boots up.
 
 ### Configure the Runner
+
+> [!NOTE]
+> These instructuions are for configuring a new self-hosted runner. The runner is already configured on the `posit` machine.
 
 1. In the GitHub repository, navigate to `Settings` > `Actions` > `Runners`
 2. Click the `New self-hosted runner` button

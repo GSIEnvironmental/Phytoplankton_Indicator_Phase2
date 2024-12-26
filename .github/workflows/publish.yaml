@@ -7,13 +7,18 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  UV_SYSTEM_PYTHON: 1
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DATABASE: phyto_indicator
+  POSTGRES_USER: actions_runner
+
 jobs:
   build-deploy:
     runs-on: self-hosted
     permissions:
       contents: write
-    env:
-      UV_SYSTEM_PYTHON: 1
     # Cancel any previous deployments that are still in progress
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,9 +26,16 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Query Postgres
+      - name: Create _environment file
         run: |
-          PGPASSWORD=$(cat ~/.actions_runner_pgpassword) psql -U actions_runner -h localhost phyto_indicator -c "SELECT * FROM d_location limit 5;"
+          echo "POSTGRES_HOST=${{ env.POSTGRES_HOST }}" > _environment
+          echo "POSTGRES_PORT=${{ env.POSTGRES_PORT }}" >> _environment
+          echo "POSTGRES_DATABASE=${{ env.POSTGRES_DATABASE }}" >> _environment
+          echo "POSTGRES_USER=${{ env.POSTGRES_USER }}" >> _environment
+          echo "POSTGRES_PASSWORD=$(cat ~/.actions_runner_pgpassword)" >> _environment
+      - name: Test Database Connection
+        run: |
+          PGPASSWORD=$(cat ~/.actions_runner_pgpassword) psql -U ${{ env.POSTGRES_USER }} -h ${{ env.POSTGRES_HOST }} ${{ env.POSTGRES_DATABASE }} -c "SELECT current_database();"
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
       - name: Setup R
