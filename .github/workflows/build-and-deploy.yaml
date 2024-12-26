@@ -17,6 +17,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Delete the .gitingore file
+        # Remove the .gitignore file so that the rendered _site directory 
+        # can be included in the checked out repository.
+        run: rm .gitignore
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
       - name: Install R
