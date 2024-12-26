@@ -54,5 +54,38 @@
     "title": "Examples",
     "section": "Download Files",
     "text": "Download Files\nDocs\n Download Python requirements"
+  },
+  {
+    "objectID": "content/inventory/index.html",
+    "href": "content/inventory/index.html",
+    "title": "Data Inventory",
+    "section": "",
+    "text": "Code\nimport os\n\nimport polars as pl\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\ndf = pl.read_database_uri(\n    \"select study_id, full_name, contact from d_study order by study_id\",\n    uri,\n    engine=\"connectorx\",\n)\ndf\n\n\n\nshape: (7, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
+    "crumbs": [
+      "Inventory",
+      "Data Inventory"
+    ]
+  },
+  {
+    "objectID": "content/inventory/index.html#studies",
+    "href": "content/inventory/index.html#studies",
+    "title": "Data Inventory",
+    "section": "",
+    "text": "Code\nimport os\n\nimport polars as pl\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\ndf = pl.read_database_uri(\n    \"select study_id, full_name, contact from d_study order by study_id\",\n    uri,\n    engine=\"connectorx\",\n)\ndf\n\n\n\nshape: (7, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
+    "crumbs": [
+      "Inventory",
+      "Data Inventory"
+    ]
+  },
+  {
+    "objectID": "content/inventory/index.html#locations",
+    "href": "content/inventory/index.html#locations",
+    "title": "Data Inventory",
+    "section": "Locations",
+    "text": "Locations\n\n\nCode\nimport os\n\nimport polars as pl\nimport plotly.express as px\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = \"\"\"\n    SELECT reg.description AS region,\n        loc.location_id,\n        loc.description AS location_desc,\n        st_x(loc.loc_geom) AS x_coord,\n        st_y(loc.loc_geom) AS y_coord\n    FROM d_location loc\n        LEFT JOIN ( \n            SELECT *\n            FROM d_area\n            WHERE d_area.area_type::text = 'Region'::text\n        ) reg ON st_intersects(loc.loc_geom, reg.area_geom)\n    ORDER BY reg.description, loc.location_id\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\n\nfig = px.scatter_mapbox(\n    df,\n    lat=\"y_coord\",\n    lon=\"x_coord\",\n    hover_name=\"location_id\",\n    hover_data=[\"region\", \"location_desc\"],\n    color=\"region\",\n    zoom=6,\n)\n\nfig.update_layout(\n    mapbox=dict(\n        style=\"open-street-map\",\n    ),\n    margin={\"r\": 0, \"t\": 0, \"l\": 0, \"b\": 0},\n)\n\nfig.show()",
+    "crumbs": [
+      "Inventory",
+      "Data Inventory"
+    ]
   }
 ]
