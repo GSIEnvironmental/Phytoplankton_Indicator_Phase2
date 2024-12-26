@@ -1,3 +1,71 @@
 ---
 title: Data Inventory
 ---
+
+## Studies
+
+```{python}
+import os
+
+import polars as pl
+
+uri = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DATABASE")}'
+
+df = pl.read_database_uri(
+    "select study_id, full_name, contact from d_study order by study_id",
+    uri,
+    engine="connectorx"
+)
+df
+```
+
+## Locations
+
+```{python}
+import os
+
+import polars as pl
+import plotly.express as px
+
+uri = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DATABASE")}'
+
+sql = """
+    SELECT reg.description AS region,
+        loc.location_id,
+        loc.description AS location_desc,
+        st_x(loc.loc_geom) AS x_coord,
+        st_y(loc.loc_geom) AS y_coord
+    FROM d_location loc
+        LEFT JOIN ( 
+            SELECT *
+            FROM d_area
+            WHERE d_area.area_type::text = 'Region'::text
+        ) reg ON st_intersects(loc.loc_geom, reg.area_geom)
+    ORDER BY reg.description, loc.location_id
+"""
+
+df = pl.read_database_uri(
+    sql,
+    uri,
+    engine="connectorx",
+)
+
+fig = px.scatter_mapbox(
+    df,
+    lat="y_coord",
+    lon="x_coord",
+    hover_name="location_id",
+    hover_data=["region", "location_desc"],
+    color="region",
+    zoom=6,
+)
+
+fig.update_layout(
+    mapbox=dict(
+        style="open-street-map",
+    ),
+    margin={"r":0, "t":0, "l":0, "b":0}
+)
+
+fig.show()
+```
