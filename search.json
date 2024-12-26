@@ -11,14 +11,21 @@
     "href": "content/examples.html",
     "title": "Examples",
     "section": "",
-    "text": "Docs\n  \n\n\n\nDocs\nanalytics bar_chart"
+    "text": "import os\n\nif \"POSTGRES_DATABASE\" in os.environ:\n    print(\"Postgres database found in environment variables!\")\n    print(f\"Database name: {os.getenv('POSTGRES_DATABASE')}\")\nelse:\n    print(\"Postgres database not found in environment variables!\")\n\nPostgres database found in environment variables!\nDatabase name: phyto_indicator"
+  },
+  {
+    "objectID": "content/examples.html#environment-variables",
+    "href": "content/examples.html#environment-variables",
+    "title": "Examples",
+    "section": "",
+    "text": "import os\n\nif \"POSTGRES_DATABASE\" in os.environ:\n    print(\"Postgres database found in environment variables!\")\n    print(f\"Database name: {os.getenv('POSTGRES_DATABASE')}\")\nelse:\n    print(\"Postgres database not found in environment variables!\")\n\nPostgres database found in environment variables!\nDatabase name: phyto_indicator"
   },
   {
     "objectID": "content/examples.html#icons",
     "href": "content/examples.html#icons",
     "title": "Examples",
-    "section": "",
-    "text": "Docs\n  \n\n\n\nDocs\nanalytics bar_chart"
+    "section": "Icons",
+    "text": "Icons\n\nBootstrap Icons\nDocs\n  \n\n\nMaterial Icons\nDocs\nanalytics bar_chart"
   },
   {
     "objectID": "content/examples.html#code-blocks",
