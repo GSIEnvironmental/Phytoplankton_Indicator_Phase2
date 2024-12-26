@@ -1,0 +1,51 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Phytoplankton Indicator",
+    "section": "",
+    "text": "Some intro text here.\n \n  \n   \n  \n    \n     GitHub\n  \n  \n    \n     Website"
+  },
+  {
+    "objectID": "content/examples.html",
+    "href": "content/examples.html",
+    "title": "Examples",
+    "section": "",
+    "text": "Docs\n  \n\n\n\nDocs\nanalytics bar_chart"
+  },
+  {
+    "objectID": "content/examples.html#icons",
+    "href": "content/examples.html#icons",
+    "title": "Examples",
+    "section": "",
+    "text": "Docs\n  \n\n\n\nDocs\nanalytics bar_chart"
+  },
+  {
+    "objectID": "content/examples.html#code-blocks",
+    "href": "content/examples.html#code-blocks",
+    "title": "Examples",
+    "section": "Code Blocks",
+    "text": "Code Blocks\n\nStatic Code Blocks\nprint(\"Hello World!\")\n\n\nExecutable Python Code\nDocs\n\nNote the document format is set to live-html in the front matter.\n\n\n\n\n\n\n\n\n\nExecutable R Code\nDocs\n\nNote the document format is set to live-html in the front matter."
+  },
+  {
+    "objectID": "content/examples.html#diagrams",
+    "href": "content/examples.html#diagrams",
+    "title": "Examples",
+    "section": "Diagrams",
+    "text": "Diagrams\nExtension Docs\n\nMermaid Diagrams\nMermaid Docs\n\n\n\n\n\ngraph TD;\n  A--&gt;B;\n  A--&gt;C;\n  B--&gt;D;\n  C--&gt;D;"
+  },
+  {
+    "objectID": "content/examples.html#embedding-code-files",
+    "href": "content/examples.html#embedding-code-files",
+    "title": "Examples",
+    "section": "Embedding Code Files",
+    "text": "Embedding Code Files\nDocs\n\n  # the requested version of renv\n  version &lt;- \"0.17.3\""
+  },
+  {
+    "objectID": "content/examples.html#download-files",
+    "href": "content/examples.html#download-files",
+    "title": "Examples",
+    "section": "Download Files",
+    "text": "Download Files\nDocs\n Download Python requirements"
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "content/index.qmd": {
+    "index.html": "ab9a655f"
+  },
+  "index.qmd": {
+    "index.html": "4a6e99c7"
+  },
+  "content/about.qmd": {
+    "about.html": "c227f162"
+  },
+  "content/subfolder/index.qmd": {
+    "index.html": "264d3534"
+  },
+  "content/subfolder/page.qmd": {
+    "page.html": "985d12b3"
+  },
+  "content/data-analysis/index.qmd": {
+    "index.html": "7ed91656"
+  },
+  "content/data-inventory/index.qmd": {
+    "index.html": "d4636ccf"
+  },
+  "content/data-management/index.qmd": {
+    "index.html": "8d69d101"
+  },
+  "content/examples.qmd": {
+    "examples.html": "bc755db9"
+  },
+  "content/analysis/index.qmd": {
+    "index.html": "c77c5614"
+  },
+  "content/inventory/index.qmd": {
+    "index.html": "5b940f6c"
+  }
+}

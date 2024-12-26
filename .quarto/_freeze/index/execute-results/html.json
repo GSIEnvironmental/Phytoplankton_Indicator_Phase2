@@ -1,0 +1,12 @@
+{
+  "hash": "4aa7b13d7314db6e33f000886e76cd9a",
+  "result": {
+    "engine": "jupyter",
+    "markdown": "---\ntitle: GSI Technical Documentation\nabout:\n  template: solana\n  image: static/logo.svg\n  links:\n    - icon: github\n      text: GitHub\n      href: https://github.com/GSIEnvironmental/docs\n    - icon: browser-safari\n      text: Website\n      href: https://www.gsienv.com/\nformat: \n  html:\n    page-layout: full\n    toc: false\n---\n\n\n### Icons\n\n#### Bootstrap Icons\n\n[Docs](https://github.com/shafayetShafee/bsicons)\n\n\n{{< bi windows class=styled >}}\n\n{{< bi ubuntu  class=styled >}}\n\n{{< bi terminal-fill class=styled >}}\n\n\n\n#### Material Icons\n\n[Docs](https://shafayetshafee.github.io/material-icons/example.html)\n\n\n{{< mi analytics type=outlined >}}\n\n{{< mi bar_chart size=60px >}}\n\n\n### Code Block\n\n```python\nprint(\"Hello World!\")\n```\n\n### Executable Python Code\n\n[Docs](https://r-wasm.github.io/quarto-live/)\n\n> Note the document format is set to `live-html` in the front matter.\n\n\n```{pyodide}\nfor x in range(5):\n  print(x ** 2)\n```\n\n\n\n### Executable R Code\n\n[Docs](https://r-wasm.github.io/quarto-live/)\n\n> Note the document format is set to `live-html` in the front matter.\n\n\n```{webr}\nfor (x in 1:5) {\n  print(x ** 2)\n}\n```\n\n\n\n### Mermaid Diagram\n\n[Extension Docs](https://github.com/pandoc-ext/diagram)\n\n[Mermaid Docs](https://mermaid.js.org/)\n\n\n```{mermaid}\ngraph TD;\n  A-->B;\n  A-->C;\n  B-->D;\n  C-->D;\n```\n\n\n### Embedding Code Files\n\n[Docs](https://github.com/shafayetShafee/add-code-files)\n\n::: {add-from=./renv/activate.R start-line=4 end-line=5 code-line-numbers=\"true\"}\n```{.R}\n```\n:::\n\n### Download Files\n\n[Docs](https://github.com/shafayetShafee/downloadthis)\n\n{{< downloadthis requirements.txt dname=\"python-requirements\" label=\"Download Python requirements\" icon=\"download\" class=\"btn btn-sm btn-primary p-2\">}}\n\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [],
+    "includes": {}
+  }
+}
