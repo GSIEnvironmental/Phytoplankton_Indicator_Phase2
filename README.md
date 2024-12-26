@@ -18,9 +18,12 @@ Technical documentation & reporting website for the Puget Sound Partnership Phyt
    The Python virtual environment needs to be activated when rendering or previewing the site. This is because Quarto uses Python kernels to run code chunks embedded within the `.qmd` documents.
 7. Install the Python requirements: `python -m pip install -r requirements.txt`
 8. Setup `renv` for R dependencies: `Rscript -e 'renv::restore()'`
+
    > [!NOTE]
    > [renv](https://rstudio.github.io/renv/articles/renv.html) is an R package that creates a project-specific library to manage dependencies. The [`renv.lock`](./renv.lock) file contains a snapshot of the R packages used in this project. Running `renv::restore()` will install the necessary R packages in the project library.
+
 9. (*optional*) Install `pre-commit` hooks: `python -m pre_commit install --install-hooks`
+
    > [!NOTE]
    > [Pre-commit](https://pre-commit.com/) hooks are composed of linters and formatters specifically selected for this project. Pre-commit will help keep our code files clean and make sure we are following best practices before committing changes. The pre-commit package is included in our Python [requirements](./requirements.txt). Hooks will run on the current commit snapshot when executing a `git commit`.
 
@@ -44,8 +47,10 @@ The following steps assume you have already completed all [setup](#setup) proced
 5. Update [`_quarto.yml`](_quarto.yml) if changes to the repository structure are made.
 6. If using `pre-commit`, now is a good time to check files for issues: `python -m pre_commit run --all-files`.
 7. Once finished, render the site (this may take a couple minutes): `quarto render`
+
    > [!TIP]
    > Target specific sections or pages to render instead of the entire site such as `quarto render docs/data-management` or `quarto render docs/data-management/index.qmd`.
+
 8. Stage your changes with git: `git add <files>`
    1. To stage all modified files: `git add --all`
 9. Narrate and commit changes: `git commit -m "YOUR COMMIT MESSAGE"`
