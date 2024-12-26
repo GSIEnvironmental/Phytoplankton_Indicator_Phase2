@@ -1,4 +1,9 @@
 ---
+# Note that some steps in this workflow are commented out because
+# the self hosted runner does not have the necessary permissions to
+# install these dependencies (and they are already installed on the runner).
+# If you are using a different runner, you may need to uncomment these steps.
+
 name: publish
 
 on:
@@ -8,7 +13,7 @@ on:
   workflow_dispatch:
 
 env:
-  UV_SYSTEM_PYTHON: 1
+  # UV_SYSTEM_PYTHON: 1
   POSTGRES_HOST: localhost
   POSTGRES_PORT: 5432
   POSTGRES_DATABASE: phyto_indicator
@@ -41,7 +46,7 @@ jobs:
       # - name: Setup R
       #   uses: r-lib/actions/setup-r@v2
       #   with:
-      #     r-version: '4.4.0'
+      #     r-version: '4.2.3'
       - name: Install R Dependencies
         uses: r-lib/actions/setup-renv@v2
         with:
