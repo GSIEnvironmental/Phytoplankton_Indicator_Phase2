@@ -1,6 +1,8 @@
 # Phytoplankton Indicator (Phase 2)
 
-Technical documentation & reporting website for the Puget Sound Partnership Phytoplankton Indicator (Phase 2) project.
+[![publish](https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2/actions/workflows/publish.yaml/badge.svg)](https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2/actions/workflows/publish.yaml)
+
+Technical documentation & reporting for the Puget Sound Partnership Phytoplankton Indicator (Phase 2) project.
 
 ## Getting Started
 
@@ -25,7 +27,7 @@ Technical documentation & reporting website for the Puget Sound Partnership Phyt
 The following steps assume you have already completed all [setup](#setup) procedures.
 
 > [!IMPORTANT]
-> You do not need to render this project prior to committing changes to GitHub. The [GitHub Actions workflow](./.github/workflows/build-and-deploy.yaml) will automatically render the site when changes are pushed to the repository.
+> You do not need to render this project prior to committing changes to GitHub. The [GitHub Actions workflow](./.github/workflows/pubish.yaml) will automatically render the site when changes are pushed to the repository.
 
 1. Pull the latest changes from GitHub:
    1. Checkout the main branch `git checkout main`
