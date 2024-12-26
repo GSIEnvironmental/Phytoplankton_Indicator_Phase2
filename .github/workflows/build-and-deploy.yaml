@@ -14,13 +14,13 @@ jobs:
       contents: write
     env:
       UV_SYSTEM_PYTHON: 1
+    # Cancel any previous deployments that are still in progress
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      - name: Delete the .gitingore file
-        # Remove the .gitignore file so that the rendered _site directory 
-        # can be included in the checked out repository.
-        run: rm .gitignore
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
       - name: Install R
@@ -48,8 +48,6 @@ jobs:
       - name: Render and Publish
         uses: quarto-dev/quarto-actions/publish@v2
         with:
-          render: true
           target: gh-pages
-          path: _site
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
