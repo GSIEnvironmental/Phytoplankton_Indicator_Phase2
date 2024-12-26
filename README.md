@@ -70,3 +70,65 @@ The following Quarto [extensions](./_extensions/) are used in this project:
 - [downloadthis](https://github.com/shafayetShafee/downloadthis)
 - [add-code-files](https://github.com/shafayetShafee/add-code-files)
 - [code-fullscreen](https://github.com/shafayetShafee/code-fullscreen)
+
+## GitHub Actions
+
+This repository uses a [self-hosted runner](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners) to render the site and publish it to GitHub Pages. The workflow is defined in the [publish.yaml](./.github/workflows/publish.yaml) file.
+
+The runner is hosted on the `posit` machine (`192.168.0.10`) and is managed by Caleb Grant (`/home/cgrant/GitHub/actions-runner`). The runner is configured to run as a service and is started automatically when the machine boots up.
+
+This repository uses a self-hosted runner due to the need for various resources only available on the `posit` machine. The runner is configured to run on the `main` branch pushes only.
+
+### Configure the Runner
+
+1. In the GitHub repository, navigate to `Settings` > `Actions` > `Runners`
+2. Click the `New self-hosted runner` button
+3. For the runner image, select `Linux`.
+4. For the architecture, select `x64`.
+5. On the posit machine, login as `cgrant` and navigate to `/home/cgrant@gsi-pc.local/GitHub`
+6. Follow the instructions on GitHub to configure the runner (also outlined below)
+7. Create the `actions-runner` directory:
+
+   ```sh
+   mkdir actions-runner && cd actions-runner
+   ```
+
+8. Download the latest runner package:
+
+   ```sh
+   curl -o actions-runner-linux-x64-2.321.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.321.0/actions-runner-linux-x64-2.321.0.tar.gz
+   ```
+
+9. Extract the installer:
+
+   ```sh
+   tar xzf ./actions-runner-linux-x64-2.321.0.tar.gz
+   ```
+
+10. Create the runner and start the configuration process. Accept all the defaults.
+
+    ```sh
+    ./config.sh --url https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2 --token <REG_TOKEN>
+    ```
+
+11. Install the runner as a service:
+
+    ```sh
+    sudo ./svc.sh install
+    ```
+
+12. Start the runner service:
+
+    ```sh
+    sudo ./svc.sh start
+    ```
+
+13. Verify the runner is running:
+
+    ```sh
+    sudo ./svc.sh status
+    ```
+
+    > To stop the service, run `sudo ./svc.sh stop`
+
+14. The runner should now be available in the GitHub repository under `Settings` > `Actions` > `Runners`

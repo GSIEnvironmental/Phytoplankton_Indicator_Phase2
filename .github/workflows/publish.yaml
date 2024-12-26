@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: write
     env:
@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Query Postgres
+        run: |
+          PGPASSWORD=$(cat ~/.actions_runner_pgpassword) psql -U actions_runner -h localhost phyto_indicator -c "SELECT * FROM d_location limit 5;"
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
       - name: Setup R
