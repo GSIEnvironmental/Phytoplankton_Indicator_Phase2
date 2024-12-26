@@ -1,0 +1,24 @@
+---
+title: Phytoplankton Indicator
+description: Puget Sound Partnership Phytoplankton Indicator (Phase 2)
+about:
+  id: hero-heading
+  template: jolla
+  image: static/banner.png
+  links:
+    - icon: github
+      text: GitHub
+      href: https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2
+    - icon: browser-safari
+      text: Website
+      href: https://www.gsienv.com/
+format:
+  html:
+    toc: false
+---
+
+:::{#hero-heading}
+
+Some intro text here.
+
+:::

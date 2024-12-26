@@ -1,0 +1,2 @@
+[files]
+extend-exclude = ["_extensions/*", "_freeze/*", "_site/*", "renv/*", "static/*"]

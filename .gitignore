@@ -1,0 +1,13 @@
+~$*
+.DS_Store
+.Rproj.user
+.Rhistoryt
+.Rhistory
+.venv/
+*log*
+*cache*
+.env
+/.quarto/
+/_site/
+/.condaenv/
+/.luarc.json

@@ -1,0 +1,18 @@
+---
+# https://github.com/DavidAnson/markdownlint
+
+# Line length
+MD013:
+  line_length: 9999
+  heading_line_length: 200
+  code_blocks: false
+# Inline HTML
+MD033:
+  allowed_elements: [img, a, br, iframe, meta, span]
+# Emphasis used instead of a heading
+MD036: false
+# Images should have alternate text
+MD045: false
+# Code block style fenced vs indented
+MD046:
+  style: fenced

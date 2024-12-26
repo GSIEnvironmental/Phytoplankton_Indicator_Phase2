@@ -1,0 +1,121 @@
+---
+# Example: https://github.com/quarto-dev/quarto-web/blob/main/_quarto.yml
+project:
+  type: website
+  output-dir: _site
+  preview:
+    port: 4200
+    browser: false
+  resources:
+    - "/.nojekyll"
+    - "/static/*"
+  render:
+    - "*.qmd"
+    - "*.ipynb"
+    - "*.Rmd"
+    - "*.md"
+
+# https://github.com/quarto-dev/quarto-actions/blob/main/examples/example-02-freeze.md
+execute:
+  freeze: auto
+
+website:
+  title: "Phytoplankton Indicator Phase 2"
+  description: "Puget Sound Partnership Phytoplankton Indicator, Phase 2"
+  favicon: /static/favicon.ico
+  page-navigation: true
+  back-to-top-navigation: false
+  repo-url: https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2
+  repo-actions: [issue]
+  search:
+    location: navbar
+    type: overlay
+    copy-button: true
+    keyboard-shortcut: ["/", "H"]
+  page-footer:
+    left: "GSI Environmental Inc., 2025"
+    background: light
+    # right:
+      # - icon: github
+        # href: https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2
+  navbar:
+    title: false
+    logo: /static/favicon.ico
+    collapse-below: lg
+    left:
+      - text: "Quarto Examples"
+        href: content/examples.qmd
+      - text: "Inventory"
+        href: content/inventory/index.qmd
+      - text: "Analysis"
+        href: content/analysis/index.qmd
+      - text: "Data Management"
+        href: content/data-management/index.qmd
+    right:
+      - text: "About"
+        href: content/about.qmd
+
+  sidebar:
+    - id: inventory
+      collapse-level: 1
+      align: left
+      style: "docked"
+      contents:
+        - content/inventory/index.qmd
+        - auto: "content/inventory/*"
+        # - section: "Section"
+        #   href: content/inventory/subfolder/index.qmd
+        #   contents:
+        #     - auto: "content/inventory/subfolder/*"
+    - id: analysis
+      collapse-level: 1
+      align: left
+      style: "docked"
+      contents:
+        - content/analysis/index.qmd
+        - auto: "content/analysis/*"
+        # - section: "Section"
+        #   href: content/analysis/subfolder/index.qmd
+        #   contents:
+        #     - auto: "content/analysis/subfolder/*"
+    - id: data-management
+      collapse-level: 1
+      align: left
+      style: "docked"
+      contents:
+        - content/data-management/index.qmd
+        - auto: "content/data-management/*"
+        # - section: "Section"
+        #   href: content/data-management/subfolder/index.qmd
+        #   contents:
+        #     - auto: "content/data-management/subfolder/*"
+
+format:
+  html:
+    theme:
+      light: [flatly, static/theme-light.scss]
+      dark: [darkly, static/theme-dark.scss]
+    css: static/styles.css
+    toc: true
+    toc-depth: 3
+    code-copy: true
+    code-fold: true
+    code-overflow: scroll
+    code-line-numbers: false
+    code-annotations: below
+    highlight-style: github
+    link-external-newwindow: true
+    filters:
+      - black-formatter
+      - diagram
+    grid:
+      sidebar-width: 350px
+      body-width: 1000px
+      margin-width: 250px
+    include-in-header:
+      - text: |
+          <script
+            src="https://code.jquery.com/jquery-3.7.1.slim.min.js"
+            integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8="
+            crossorigin="anonymous">
+          </script>
