@@ -1,13 +1,29 @@
-#quarto-sidebar-glass {
-    padding-top: 0px;
+/*
+GSI Colors:
+    1C6EAC - Blue
+    005782 - Dark Blue
+    6AD1D8 - Light Blue
+    EB7C32 - Orange
+    231F20 - Black
+    636363 - Gray
+    EBEFF2 - Light Gray
+    FFFFFF - White
+
+GSI Font: Rajdhani
+*/
+
+@media (min-width: 1020px) {
+  .navbar-brand-container {
+    margin-right: 1em;
+  }
 }
 
-.nav-footer {
-    padding-top: 0px;
-    padding-bottom: 0px;
+.navbar-brand > img {
+  max-height: 36px;
 }
 
-.navbar {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+html.dark .dt-container .dt-search input,
+html.dark .dt-container .dt-length select {
+  border: 1px solid rgb(200, 200, 200) !important;
+  background-color: transparent !important;
 }

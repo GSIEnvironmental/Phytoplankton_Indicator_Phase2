@@ -1,3 +1,8 @@
 ---
 title: Data Management
+description: Phytoplankton Monitoring Database Structure and Content
 ---
+
+## Overview
+
+The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow.  The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project.  The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset.  The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.

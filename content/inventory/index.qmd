@@ -1,6 +1,11 @@
 ---
 title: Data Inventory
+description: Phytoplankton Data Inventory
 ---
+
+## Overview
+
+The **Phytoplankton Data Inventory** is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.
 
 ## Studies
 
@@ -19,7 +24,7 @@ df = pl.read_database_uri(
 df
 ```
 
-## Locations
+## Sampling Locations
 
 ```{python}
 import os

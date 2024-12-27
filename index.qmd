@@ -1,24 +1,96 @@
 ---
 title: Phytoplankton Indicator
 description: Puget Sound Partnership Phytoplankton Indicator (Phase 2)
-about:
-  id: hero-heading
-  template: jolla
-  image: static/banner.png
-  links:
-    - icon: github
-      text: GitHub
-      href: https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2
-    - icon: browser-safari
-      text: Website
-      href: https://www.gsienv.com/
-format:
-  html:
-    toc: false
+title-block-banner: true
+include-in-header:
+  - text: |
+      <style>
+      /*
+          Custom CSS for the title block
+      */
+      .quarto-title-block .quarto-title-banner {
+        background-position-y: center;
+        height: 200px;
+      }
+      .quarto-title-banner {
+        background-image: linear-gradient(135deg, #6AD1D8, #1C6EAC);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+      /* Make the h1 text black with an orange outline */
+      .quarto-title-block h1 {
+        font-size: 2.5em;
+        color: #EBEFF2;
+        text-shadow: 1px 1px 0 #1C6EAC, -1px -1px 0 #1C6EAC, 1px -1px 0 #1C6EAC, -1px 1px 0 #1C6EAC;
+      }
+      .quarto-title-block .description {
+        font-size: 1.2em;
+        color: #231F20;
+      }
+      </style>
 ---
 
-:::{#hero-heading}
+## Overview
 
-Some intro text here.
+The Phytoplankton Vital Sign Project is curating phytoplankton-related data from Puget Sound into two separate digital repositories.  The first is the [Phytoplankton Data Inventory](./content/inventory/index.qmd), which is a list of organizations conducting phytoplankton monitoring in Puget Sound waters and includes information on program objectives, metrics collected, sampling duration and frequency, site locations, and sampling and analytical methods. Data collected by these monitoring efforts are being compiled and ingested into a [Phytoplankton Monitoring Database](./content/data-management/index.qmd). This database will serve as the source of data for analyses of long-term trends and other statistical analyses relevant to identifying metrics or patterns for use in a phytoplankton-based Vital Sign.
 
-:::
+The [Phytoplankton Data Inventory](./content/inventory/index.qmd) will help improve understanding of the different methods being used across programs for collecting phytoplankton-related data. The [Phytoplankton Monitoring Database](./content/data-management/index.qmd) will allow the project team to conduct statistical analyses of data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify gaps in monitoring data. The inventory and database together will inform future Phase 3 work to create a single, large-scale regional metric (Vital Sign) for communicating ecosystem-scale status, trends and recovery in Puget Sound related to the phytoplankton community.
+
+## Geographic Coverage
+
+Based on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay).
+
+```{python}
+import os
+
+import polars as pl
+import plotly.express as px
+import json
+import random
+import plotly.graph_objects as go
+
+uri = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DATABASE")}'
+
+df = pl.read_database_uri(
+    "select area_id, st_asgeojson(area_geom) as area from d_area where area_type = 'Region'",
+    uri,
+    engine="connectorx"
+)
+
+geojson = {
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": json.loads(area),
+            "properties": {
+                "area_id": area_id,
+                "color": f"rgb({random.randint(0, 255)}, {random.randint(0, 255)}, {random.randint(0, 255)})"
+            }
+        }
+        for area_id, area in zip(df["area_id"], df["area"])
+    ]
+}
+
+fig = px.scatter_mapbox(
+    lat=[],
+    lon=[],
+).update_layout(
+    mapbox={
+        "style": "open-street-map",
+        "zoom": 5,
+        "center": {"lat": 48.0, "lon": -125.0},
+        "layers": [
+            {
+                "source": geojson,
+                "below": "traces",
+                "type": "fill",
+                "color": "blue",
+                "opacity": 0.4
+            }
+        ]
+    },
+    margin={"r": 0, "t": 0, "l": 0, "b": 0},
+)
+
+fig
+```
