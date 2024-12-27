@@ -4,21 +4,125 @@
     "href": "index.html",
     "title": "Phytoplankton Indicator",
     "section": "",
-    "text": "Some intro text here.\n \n  \n   \n  \n    \n     GitHub\n  \n  \n    \n     Website"
+    "text": "The Phytoplankton Vital Sign Project is curating phytoplankton-related data from Puget Sound into two separate digital repositories. The first is the Phytoplankton Data Inventory, which is a list of organizations conducting phytoplankton monitoring in Puget Sound waters and includes information on program objectives, metrics collected, sampling duration and frequency, site locations, and sampling and analytical methods. Data collected by these monitoring efforts are being compiled and ingested into a Phytoplankton Monitoring Database. This database will serve as the source of data for analyses of long-term trends and other statistical analyses relevant to identifying metrics or patterns for use in a phytoplankton-based Vital Sign.\nThe Phytoplankton Data Inventory will help improve understanding of the different methods being used across programs for collecting phytoplankton-related data. The Phytoplankton Monitoring Database will allow the project team to conduct statistical analyses of data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify gaps in monitoring data. The inventory and database together will inform future Phase 3 work to create a single, large-scale regional metric (Vital Sign) for communicating ecosystem-scale status, trends and recovery in Puget Sound related to the phytoplankton community."
+  },
+  {
+    "objectID": "index.html#overview",
+    "href": "index.html#overview",
+    "title": "Phytoplankton Indicator",
+    "section": "",
+    "text": "The Phytoplankton Vital Sign Project is curating phytoplankton-related data from Puget Sound into two separate digital repositories. The first is the Phytoplankton Data Inventory, which is a list of organizations conducting phytoplankton monitoring in Puget Sound waters and includes information on program objectives, metrics collected, sampling duration and frequency, site locations, and sampling and analytical methods. Data collected by these monitoring efforts are being compiled and ingested into a Phytoplankton Monitoring Database. This database will serve as the source of data for analyses of long-term trends and other statistical analyses relevant to identifying metrics or patterns for use in a phytoplankton-based Vital Sign.\nThe Phytoplankton Data Inventory will help improve understanding of the different methods being used across programs for collecting phytoplankton-related data. The Phytoplankton Monitoring Database will allow the project team to conduct statistical analyses of data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify gaps in monitoring data. The inventory and database together will inform future Phase 3 work to create a single, large-scale regional metric (Vital Sign) for communicating ecosystem-scale status, trends and recovery in Puget Sound related to the phytoplankton community."
+  },
+  {
+    "objectID": "index.html#geographic-coverage",
+    "href": "index.html#geographic-coverage",
+    "title": "Phytoplankton Indicator",
+    "section": "Geographic Coverage",
+    "text": "Geographic Coverage\nBased on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay).\n\n\nCode\nimport os\n\nimport polars as pl\nimport plotly.express as px\nimport json\nimport random\nimport plotly.graph_objects as go\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\ndf = pl.read_database_uri(\n    \"select area_id, st_asgeojson(area_geom) as area from d_area where area_type = 'Region'\",\n    uri,\n    engine=\"connectorx\",\n)\n\ngeojson = {\n    \"type\": \"FeatureCollection\",\n    \"features\": [\n        {\n            \"type\": \"Feature\",\n            \"geometry\": json.loads(area),\n            \"properties\": {\n                \"area_id\": area_id,\n                \"color\": f\"rgb({random.randint(0, 255)}, {random.randint(0, 255)}, {random.randint(0, 255)})\",\n            },\n        }\n        for area_id, area in zip(df[\"area_id\"], df[\"area\"])\n    ],\n}\n\nfig = px.scatter_mapbox(\n    lat=[],\n    lon=[],\n).update_layout(\n    mapbox={\n        \"style\": \"open-street-map\",\n        \"zoom\": 5,\n        \"center\": {\"lat\": 48.0, \"lon\": -125.0},\n        \"layers\": [\n            {\n                \"source\": geojson,\n                \"below\": \"traces\",\n                \"type\": \"fill\",\n                \"color\": \"blue\",\n                \"opacity\": 0.4,\n            }\n        ],\n    },\n    margin={\"r\": 0, \"t\": 0, \"l\": 0, \"b\": 0},\n)\n\nfig"
+  },
+  {
+    "objectID": "content/inventory/datasets/sp-abund-biovol-comm.html",
+    "href": "content/inventory/datasets/sp-abund-biovol-comm.html",
+    "title": "Species Abundance, Biovolume, and Community Data",
+    "section": "",
+    "text": "Code\nimport os\nfrom pathlib import Path\n\nimport polars as pl\n\n# https://mwouts.github.io/itables/quick_start.html\nimport itables\nfrom itables import init_notebook_mode, show\n\ninit_notebook_mode(all_interactive=True)\nitables.options.classes = [\"display\", \"nowrap\", \"compact\", \"table\", \"table-striped\"]\n\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = Path(\"../../../static/sql/sp-abund-biovol-comm.sql\").read_text()\n\nsql = f\"\"\"\n    select\n        area_id, location_id, extract(year from sample_date), count(*) as nrows\n    from\n        (\n            {sql}\n        ) as q\n    group by\n        area_id, location_id, extract(year from sample_date)\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\nshow(df)\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)\n\n\n\n\n\n\n    \n      \n      area_id\n      location_id\n      extract\n      nrows\n    \n  \n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nLoading ITables v2.2.4 from the init_notebook_mode cell...\n(need help?)",
+    "crumbs": [
+      "Inventory",
+      "Datasets",
+      "Species Abundance, Biovolume, and Community Data"
+    ]
+  },
+  {
+    "objectID": "content/inventory/datasets/sp-abund-biovol-comm.html#summary",
+    "href": "content/inventory/datasets/sp-abund-biovol-comm.html#summary",
+    "title": "Species Abundance, Biovolume, and Community Data",
+    "section": "",
+    "text": "Code\nimport os\nfrom pathlib import Path\n\nimport polars as pl\n\n# https://mwouts.github.io/itables/quick_start.html\nimport itables\nfrom itables import init_notebook_mode, show\n\ninit_notebook_mode(all_interactive=True)\nitables.options.classes = [\"display\", \"nowrap\", \"compact\", \"table\", \"table-striped\"]\n\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = Path(\"../../../static/sql/sp-abund-biovol-comm.sql\").read_text()\n\nsql = f\"\"\"\n    select\n        area_id, location_id, extract(year from sample_date), count(*) as nrows\n    from\n        (\n            {sql}\n        ) as q\n    group by\n        area_id, location_id, extract(year from sample_date)\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\nshow(df)\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)\n\n\n\n\n\n\n    \n      \n      area_id\n      location_id\n      extract\n      nrows\n    \n  \n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nLoading ITables v2.2.4 from the init_notebook_mode cell...\n(need help?)",
+    "crumbs": [
+      "Inventory",
+      "Datasets",
+      "Species Abundance, Biovolume, and Community Data"
+    ]
+  },
+  {
+    "objectID": "content/inventory/datasets/bottle.html",
+    "href": "content/inventory/datasets/bottle.html",
+    "title": "Bottle Data",
+    "section": "",
+    "text": "Code\nimport os\nfrom pathlib import Path\n\nimport polars as pl\n\n# https://mwouts.github.io/itables/quick_start.html\nimport itables\nfrom itables import init_notebook_mode, show\n\ninit_notebook_mode(all_interactive=True)\nitables.options.classes = [\"display\", \"nowrap\", \"compact\", \"table\", \"table-striped\"]\n\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = Path(\"../../../static/sql/bottle.sql\").read_text()\n\nsql = f\"\"\"\n    select\n        area_id, location_id, extract(year from sample_date), count(*) as nrows\n    from\n        (\n            {sql}\n        ) as q\n    group by\n        area_id, location_id, extract(year from sample_date)\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\nshow(df)\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)\n\n\n\n\n\n\n    \n      \n      area_id\n      location_id\n      extract\n      nrows\n    \n  \n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nLoading ITables v2.2.4 from the init_notebook_mode cell...\n(need help?)",
+    "crumbs": [
+      "Inventory",
+      "Datasets",
+      "Bottle Data"
+    ]
+  },
+  {
+    "objectID": "content/inventory/datasets/bottle.html#summary",
+    "href": "content/inventory/datasets/bottle.html#summary",
+    "title": "Bottle Data",
+    "section": "",
+    "text": "Code\nimport os\nfrom pathlib import Path\n\nimport polars as pl\n\n# https://mwouts.github.io/itables/quick_start.html\nimport itables\nfrom itables import init_notebook_mode, show\n\ninit_notebook_mode(all_interactive=True)\nitables.options.classes = [\"display\", \"nowrap\", \"compact\", \"table\", \"table-striped\"]\n\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = Path(\"../../../static/sql/bottle.sql\").read_text()\n\nsql = f\"\"\"\n    select\n        area_id, location_id, extract(year from sample_date), count(*) as nrows\n    from\n        (\n            {sql}\n        ) as q\n    group by\n        area_id, location_id, extract(year from sample_date)\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\nshow(df)\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)\n\n\n\n\n\n\n    \n      \n      area_id\n      location_id\n      extract\n      nrows\n    \n  \n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nLoading ITables v2.2.4 from the init_notebook_mode cell...\n(need help?)",
+    "crumbs": [
+      "Inventory",
+      "Datasets",
+      "Bottle Data"
+    ]
+  },
+  {
+    "objectID": "content/data-management/index.html",
+    "href": "content/data-management/index.html",
+    "title": "Data Management",
+    "section": "",
+    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "crumbs": [
+      "Data Management"
+    ]
+  },
+  {
+    "objectID": "content/data-management/index.html#overview",
+    "href": "content/data-management/index.html#overview",
+    "title": "Data Management",
+    "section": "",
+    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "crumbs": [
+      "Data Management"
+    ]
+  },
+  {
+    "objectID": "content/analysis/index.html",
+    "href": "content/analysis/index.html",
+    "title": "Data Analysis",
+    "section": "",
+    "text": "Data analysis performed by…",
+    "crumbs": [
+      "Analysis",
+      "Data Analysis"
+    ]
+  },
+  {
+    "objectID": "content/analysis/index.html#overview",
+    "href": "content/analysis/index.html#overview",
+    "title": "Data Analysis",
+    "section": "",
+    "text": "Data analysis performed by…",
+    "crumbs": [
+      "Analysis",
+      "Data Analysis"
+    ]
   },
   {
     "objectID": "content/examples.html",
     "href": "content/examples.html",
     "title": "Examples",
     "section": "",
-    "text": "import os\n\nif \"POSTGRES_DATABASE\" in os.environ:\n    print(\"Postgres database found in environment variables!\")\n    print(f\"Database name: {os.getenv('POSTGRES_DATABASE')}\")\nelse:\n    print(\"Postgres database not found in environment variables!\")\n\nPostgres database found in environment variables!\nDatabase name: phyto_indicator"
+    "text": "Code\nimport os\n\nif \"POSTGRES_DATABASE\" in os.environ:\n    print(\"Postgres database found in environment variables!\")\n    print(f\"Database name: {os.getenv('POSTGRES_DATABASE')}\")\nelse:\n    print(\"Postgres database not found in environment variables!\")\n\n\nPostgres database found in environment variables!\nDatabase name: phyto_indicator"
   },
   {
     "objectID": "content/examples.html#environment-variables",
     "href": "content/examples.html#environment-variables",
     "title": "Examples",
     "section": "",
-    "text": "import os\n\nif \"POSTGRES_DATABASE\" in os.environ:\n    print(\"Postgres database found in environment variables!\")\n    print(f\"Database name: {os.getenv('POSTGRES_DATABASE')}\")\nelse:\n    print(\"Postgres database not found in environment variables!\")\n\nPostgres database found in environment variables!\nDatabase name: phyto_indicator"
+    "text": "Code\nimport os\n\nif \"POSTGRES_DATABASE\" in os.environ:\n    print(\"Postgres database found in environment variables!\")\n    print(f\"Database name: {os.getenv('POSTGRES_DATABASE')}\")\nelse:\n    print(\"Postgres database not found in environment variables!\")\n\n\nPostgres database found in environment variables!\nDatabase name: phyto_indicator"
   },
   {
     "objectID": "content/examples.html#icons",
@@ -46,7 +150,7 @@
     "href": "content/examples.html#embedding-code-files",
     "title": "Examples",
     "section": "Embedding Code Files",
-    "text": "Embedding Code Files\nDocs\n\n  # the requested version of renv\n  version &lt;- \"0.17.3\""
+    "text": "Embedding Code Files\nDocs\n\n\nCode\n  # the requested version of renv\n  version &lt;- \"0.17.3\""
   },
   {
     "objectID": "content/examples.html#download-files",
@@ -56,11 +160,46 @@
     "text": "Download Files\nDocs\n Download Python requirements"
   },
   {
+    "objectID": "content/inventory/datasets/ctd-mooring.html",
+    "href": "content/inventory/datasets/ctd-mooring.html",
+    "title": "CTD and Mooring Data",
+    "section": "",
+    "text": "Code\nimport os\nfrom pathlib import Path\n\nimport polars as pl\n\n# https://mwouts.github.io/itables/quick_start.html\nimport itables\nfrom itables import init_notebook_mode, show\n\ninit_notebook_mode(all_interactive=True)\nitables.options.classes = [\"display\", \"nowrap\", \"compact\", \"table\", \"table-striped\"]\n\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = Path(\"../../../static/sql/ctd-mooring.sql\").read_text()\n\nsql = f\"\"\"\n    select\n        area_id, location_id, extract(year from sample_date), count(*) as nrows\n    from\n        (\n            {sql}\n        ) as q\n    group by\n        area_id, location_id, extract(year from sample_date)\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\nshow(df)\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)\n\n\n\n\n\n\n    \n      \n      area_id\n      location_id\n      extract\n      nrows\n    \n  \n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nLoading ITables v2.2.4 from the init_notebook_mode cell...\n(need help?)",
+    "crumbs": [
+      "Inventory",
+      "Datasets",
+      "CTD and Mooring Data"
+    ]
+  },
+  {
+    "objectID": "content/inventory/datasets/ctd-mooring.html#summary",
+    "href": "content/inventory/datasets/ctd-mooring.html#summary",
+    "title": "CTD and Mooring Data",
+    "section": "",
+    "text": "Code\nimport os\nfrom pathlib import Path\n\nimport polars as pl\n\n# https://mwouts.github.io/itables/quick_start.html\nimport itables\nfrom itables import init_notebook_mode, show\n\ninit_notebook_mode(all_interactive=True)\nitables.options.classes = [\"display\", \"nowrap\", \"compact\", \"table\", \"table-striped\"]\n\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = Path(\"../../../static/sql/ctd-mooring.sql\").read_text()\n\nsql = f\"\"\"\n    select\n        area_id, location_id, extract(year from sample_date), count(*) as nrows\n    from\n        (\n            {sql}\n        ) as q\n    group by\n        area_id, location_id, extract(year from sample_date)\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\nshow(df)\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)\n\n\n\n\n\n\n    \n      \n      area_id\n      location_id\n      extract\n      nrows\n    \n  \n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nLoading ITables v2.2.4 from the init_notebook_mode cell...\n(need help?)",
+    "crumbs": [
+      "Inventory",
+      "Datasets",
+      "CTD and Mooring Data"
+    ]
+  },
+  {
     "objectID": "content/inventory/index.html",
     "href": "content/inventory/index.html",
     "title": "Data Inventory",
     "section": "",
-    "text": "Code\nimport os\n\nimport polars as pl\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\ndf = pl.read_database_uri(\n    \"select study_id, full_name, contact from d_study order by study_id\",\n    uri,\n    engine=\"connectorx\",\n)\ndf\n\n\n\nshape: (7, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
+    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.",
+    "crumbs": [
+      "Inventory",
+      "Data Inventory"
+    ]
+  },
+  {
+    "objectID": "content/inventory/index.html#overview",
+    "href": "content/inventory/index.html#overview",
+    "title": "Data Inventory",
+    "section": "",
+    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.",
     "crumbs": [
       "Inventory",
       "Data Inventory"
@@ -70,19 +209,19 @@
     "objectID": "content/inventory/index.html#studies",
     "href": "content/inventory/index.html#studies",
     "title": "Data Inventory",
-    "section": "",
-    "text": "Code\nimport os\n\nimport polars as pl\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\ndf = pl.read_database_uri(\n    \"select study_id, full_name, contact from d_study order by study_id\",\n    uri,\n    engine=\"connectorx\",\n)\ndf\n\n\n\nshape: (7, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
+    "section": "Studies",
+    "text": "Studies\n\n\nCode\nimport os\n\nimport polars as pl\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\ndf = pl.read_database_uri(\n    \"select study_id, full_name, contact from d_study order by study_id\",\n    uri,\n    engine=\"connectorx\",\n)\ndf\n\n\n\nshape: (7, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
     "crumbs": [
       "Inventory",
       "Data Inventory"
     ]
   },
   {
-    "objectID": "content/inventory/index.html#locations",
-    "href": "content/inventory/index.html#locations",
+    "objectID": "content/inventory/index.html#sampling-locations",
+    "href": "content/inventory/index.html#sampling-locations",
     "title": "Data Inventory",
-    "section": "Locations",
-    "text": "Locations\n\n\nCode\nimport os\n\nimport polars as pl\nimport plotly.express as px\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = \"\"\"\n    SELECT reg.description AS region,\n        loc.location_id,\n        loc.description AS location_desc,\n        st_x(loc.loc_geom) AS x_coord,\n        st_y(loc.loc_geom) AS y_coord\n    FROM d_location loc\n        LEFT JOIN ( \n            SELECT *\n            FROM d_area\n            WHERE d_area.area_type::text = 'Region'::text\n        ) reg ON st_intersects(loc.loc_geom, reg.area_geom)\n    ORDER BY reg.description, loc.location_id\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\n\nfig = px.scatter_mapbox(\n    df,\n    lat=\"y_coord\",\n    lon=\"x_coord\",\n    hover_name=\"location_id\",\n    hover_data=[\"region\", \"location_desc\"],\n    color=\"region\",\n    zoom=6,\n)\n\nfig.update_layout(\n    mapbox=dict(\n        style=\"open-street-map\",\n    ),\n    margin={\"r\": 0, \"t\": 0, \"l\": 0, \"b\": 0},\n)\n\nfig.show()",
+    "section": "Sampling Locations",
+    "text": "Sampling Locations\n\n\nCode\nimport os\n\nimport polars as pl\nimport plotly.express as px\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = \"\"\"\n    SELECT reg.description AS region,\n        loc.location_id,\n        loc.description AS location_desc,\n        st_x(loc.loc_geom) AS x_coord,\n        st_y(loc.loc_geom) AS y_coord\n    FROM d_location loc\n        LEFT JOIN ( \n            SELECT *\n            FROM d_area\n            WHERE d_area.area_type::text = 'Region'::text\n        ) reg ON st_intersects(loc.loc_geom, reg.area_geom)\n    ORDER BY reg.description, loc.location_id\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\n\nfig = px.scatter_mapbox(\n    df,\n    lat=\"y_coord\",\n    lon=\"x_coord\",\n    hover_name=\"location_id\",\n    hover_data=[\"region\", \"location_desc\"],\n    color=\"region\",\n    zoom=6,\n)\n\nfig.update_layout(\n    mapbox=dict(\n        style=\"open-street-map\",\n    ),\n    margin={\"r\": 0, \"t\": 0, \"l\": 0, \"b\": 0},\n)\n\nfig.show()",
     "crumbs": [
       "Inventory",
       "Data Inventory"
