@@ -1,6 +1,7 @@
 ---
 title: Phytoplankton Indicator
 description: Puget Sound Partnership Phytoplankton Indicator (Phase 2)
+echo: false
 title-block-banner: true
 include-in-header:
   - text: |

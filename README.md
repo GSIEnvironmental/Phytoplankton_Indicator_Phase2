@@ -80,7 +80,7 @@ The following Quarto [extensions](./_extensions/) are used in this project:
 
 This repository uses a [self-hosted runner](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners) to render the site and publish it to GitHub Pages. A self-hosted runner is used due to the need for various resources only available on the `posit` machine. The runner is configured to run on the `main` branch pushes only. The workflow is defined in the [publish.yaml](./.github/workflows/publish.yaml) file.
 
-The runner is hosted on the `posit` machine (`192.168.0.10`) and is managed by Caleb Grant (`/home/cgrant@gsi-pc.local/GitHub/actions-runner`). The runner is configured to run as a service and is started automatically when the machine boots up.
+The runner is hosted on the `posit` machine (`192.168.0.10`) and is managed by Caleb Grant (`/home/cgrant@gsi-pc.local/GitHub/action-runners/Phytoplankton_Indicator_Phase2`). The runner is configured to run as a service and is started automatically when the machine boots up.
 
 ### Configure the Runner
 
@@ -93,7 +93,7 @@ The runner is hosted on the `posit` machine (`192.168.0.10`) and is managed by C
 4. For the architecture, select `x64`.
 5. On the posit machine, login as `cgrant` and navigate to `/home/cgrant@gsi-pc.local/GitHub`
 6. Follow the instructions on GitHub to configure the runner (also outlined below)
-7. Create the `actions-runner` directory:
+7. Create the `action-runners/Phytoplankton_Indicator_Phase2` directory:
 
    ```sh
    mkdir actions-runner && cd actions-runner
