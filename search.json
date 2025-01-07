@@ -18,7 +18,7 @@
     "href": "index.html#geographic-coverage",
     "title": "Phytoplankton Indicator",
     "section": "Geographic Coverage",
-    "text": "Geographic Coverage\nBased on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay).\n\n\nCode\nimport os\n\nimport polars as pl\nimport plotly.express as px\nimport json\nimport random\nimport plotly.graph_objects as go\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\ndf = pl.read_database_uri(\n    \"select area_id, st_asgeojson(area_geom) as area from d_area where area_type = 'Region'\",\n    uri,\n    engine=\"connectorx\",\n)\n\ngeojson = {\n    \"type\": \"FeatureCollection\",\n    \"features\": [\n        {\n            \"type\": \"Feature\",\n            \"geometry\": json.loads(area),\n            \"properties\": {\n                \"area_id\": area_id,\n                \"color\": f\"rgb({random.randint(0, 255)}, {random.randint(0, 255)}, {random.randint(0, 255)})\",\n            },\n        }\n        for area_id, area in zip(df[\"area_id\"], df[\"area\"])\n    ],\n}\n\nfig = px.scatter_mapbox(\n    lat=[],\n    lon=[],\n).update_layout(\n    mapbox={\n        \"style\": \"open-street-map\",\n        \"zoom\": 5,\n        \"center\": {\"lat\": 48.0, \"lon\": -125.0},\n        \"layers\": [\n            {\n                \"source\": geojson,\n                \"below\": \"traces\",\n                \"type\": \"fill\",\n                \"color\": \"blue\",\n                \"opacity\": 0.4,\n            }\n        ],\n    },\n    margin={\"r\": 0, \"t\": 0, \"l\": 0, \"b\": 0},\n)\n\nfig"
+    "text": "Geographic Coverage\nBased on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay)."
   },
   {
     "objectID": "content/inventory/datasets/sp-abund-biovol-comm.html",
@@ -122,7 +122,7 @@
     "href": "content/analysis/index.html",
     "title": "Data Analysis",
     "section": "",
-    "text": "Data analysis performed by…",
+    "text": "Caution\n\n\n\nThis page is still under construction.",
     "crumbs": [
       "Analysis",
       "Data Analysis"
@@ -132,8 +132,8 @@
     "objectID": "content/analysis/index.html#overview",
     "href": "content/analysis/index.html#overview",
     "title": "Data Analysis",
-    "section": "",
-    "text": "Data analysis performed by…",
+    "section": "Overview",
+    "text": "Overview\nData analysis performed by…",
     "crumbs": [
       "Analysis",
       "Data Analysis"
@@ -234,7 +234,7 @@
     "href": "content/inventory/index.html#studies",
     "title": "Data Inventory",
     "section": "Studies",
-    "text": "Studies\n\n\nCode\nimport os\n\nimport polars as pl\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\ndf = pl.read_database_uri(\n    \"select study_id, full_name, contact from d_study order by study_id\",\n    uri,\n    engine=\"connectorx\",\n)\ndf\n\n\n\nshape: (7, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
+    "text": "Studies\n\n\n\nshape: (8, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UW_HCDOP\"\n\"Hood Canal Dissolved Oxygen Pr…\n\"University of Washington\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
     "crumbs": [
       "Inventory",
       "Data Inventory"
@@ -245,7 +245,7 @@
     "href": "content/inventory/index.html#sampling-locations",
     "title": "Data Inventory",
     "section": "Sampling Locations",
-    "text": "Sampling Locations\n\n\nCode\nimport os\n\nimport polars as pl\nimport plotly.express as px\n\nuri = f'postgresql://{os.getenv(\"POSTGRES_USER\")}:{os.getenv(\"POSTGRES_PASSWORD\")}@{os.getenv(\"POSTGRES_HOST\")}:{os.getenv(\"POSTGRES_PORT\")}/{os.getenv(\"POSTGRES_DATABASE\")}'\n\nsql = \"\"\"\n    SELECT reg.description AS region,\n        loc.location_id,\n        loc.description AS location_desc,\n        st_x(loc.loc_geom) AS x_coord,\n        st_y(loc.loc_geom) AS y_coord\n    FROM d_location loc\n        LEFT JOIN ( \n            SELECT *\n            FROM d_area\n            WHERE d_area.area_type::text = 'Region'::text\n        ) reg ON st_intersects(loc.loc_geom, reg.area_geom)\n    ORDER BY reg.description, loc.location_id\n\"\"\"\n\ndf = pl.read_database_uri(\n    sql,\n    uri,\n    engine=\"connectorx\",\n)\n\nfig = px.scatter_mapbox(\n    df,\n    lat=\"y_coord\",\n    lon=\"x_coord\",\n    hover_name=\"location_id\",\n    hover_data=[\"region\", \"location_desc\"],\n    color=\"region\",\n    zoom=6,\n)\n\nfig.update_layout(\n    mapbox=dict(\n        style=\"open-street-map\",\n    ),\n    margin={\"r\": 0, \"t\": 0, \"l\": 0, \"b\": 0},\n)\n\nfig.show()",
+    "text": "Sampling Locations",
     "crumbs": [
       "Inventory",
       "Data Inventory"

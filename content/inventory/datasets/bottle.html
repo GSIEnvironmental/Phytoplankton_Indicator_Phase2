@@ -72,10 +72,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-0626ff4d7a71b55c8707dcae1d04a9b6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-e25cc82807363e79c52e96bc8b7855f1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-4ec0f3d453a9cfb6eb8934aa59ce4c48.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-8b5360faad31dccab3eb2d8045d289fc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script src="../../../site_libs/quarto-contrib/live-runtime/live-runtime.js" type="module"></script>
 <link href="../../../site_libs/quarto-contrib/live-runtime/live-runtime.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
@@ -126,7 +126,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../../../index.html" class="navbar-brand navbar-brand-logo">
-    <img src="../../../static/favicon.ico" alt="GSI Environmental Inc." class="navbar-logo">
+    <img src="../../../static/logo-sm.svg" alt="GSI Environmental Inc." class="navbar-logo">
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -169,6 +169,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+      <a href="../../../index.html" class="sidebar-logo-link">
+      <img src="../../../static/logo.svg" alt="" class="sidebar-logo py-0 d-lg-inline d-none">
+      </a>
+      </div>
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
@@ -250,43 +255,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="summary" class="level2">
 <h2 class="anchored" data-anchor-id="summary">Summary</h2>
-<div id="8ae0e6cb" class="cell" data-execution_count="1">
+<div id="7a1db25b" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="8ae0e6cb"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="8ae0e6cb-1"><a href="#8ae0e6cb-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
-<span id="8ae0e6cb-2"><a href="#8ae0e6cb-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
-<span id="8ae0e6cb-3"><a href="#8ae0e6cb-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="8ae0e6cb-4"><a href="#8ae0e6cb-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
-<span id="8ae0e6cb-5"><a href="#8ae0e6cb-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="8ae0e6cb-6"><a href="#8ae0e6cb-6" aria-hidden="true" tabindex="-1"></a><span class="co"># https://mwouts.github.io/itables/quick_start.html</span></span>
-<span id="8ae0e6cb-7"><a href="#8ae0e6cb-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> itables</span>
-<span id="8ae0e6cb-8"><a href="#8ae0e6cb-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> itables <span class="im">import</span> init_notebook_mode, show</span>
-<span id="8ae0e6cb-9"><a href="#8ae0e6cb-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="8ae0e6cb-10"><a href="#8ae0e6cb-10" aria-hidden="true" tabindex="-1"></a>init_notebook_mode(all_interactive<span class="op">=</span><span class="va">True</span>)</span>
-<span id="8ae0e6cb-11"><a href="#8ae0e6cb-11" aria-hidden="true" tabindex="-1"></a>itables.options.classes <span class="op">=</span> [<span class="st">"display"</span>, <span class="st">"nowrap"</span>, <span class="st">"compact"</span>, <span class="st">"table"</span>, <span class="st">"table-striped"</span>]</span>
-<span id="8ae0e6cb-12"><a href="#8ae0e6cb-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="8ae0e6cb-13"><a href="#8ae0e6cb-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="8ae0e6cb-14"><a href="#8ae0e6cb-14" aria-hidden="true" tabindex="-1"></a>uri <span class="op">=</span> <span class="ss">f'postgresql://</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_USER"</span>)<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_PASSWORD"</span>)<span class="sc">}</span><span class="ss">@</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_HOST"</span>)<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_PORT"</span>)<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_DATABASE"</span>)<span class="sc">}</span><span class="ss">'</span></span>
-<span id="8ae0e6cb-15"><a href="#8ae0e6cb-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="8ae0e6cb-16"><a href="#8ae0e6cb-16" aria-hidden="true" tabindex="-1"></a>sql <span class="op">=</span> Path(<span class="st">"../../../static/sql/bottle.sql"</span>).read_text()</span>
-<span id="8ae0e6cb-17"><a href="#8ae0e6cb-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="8ae0e6cb-18"><a href="#8ae0e6cb-18" aria-hidden="true" tabindex="-1"></a>sql <span class="op">=</span> <span class="ss">f"""</span></span>
-<span id="8ae0e6cb-19"><a href="#8ae0e6cb-19" aria-hidden="true" tabindex="-1"></a><span class="ss">    select</span></span>
-<span id="8ae0e6cb-20"><a href="#8ae0e6cb-20" aria-hidden="true" tabindex="-1"></a><span class="ss">        area_id, location_id, extract(year from sample_date), count(*) as nrows</span></span>
-<span id="8ae0e6cb-21"><a href="#8ae0e6cb-21" aria-hidden="true" tabindex="-1"></a><span class="ss">    from</span></span>
-<span id="8ae0e6cb-22"><a href="#8ae0e6cb-22" aria-hidden="true" tabindex="-1"></a><span class="ss">        (</span></span>
-<span id="8ae0e6cb-23"><a href="#8ae0e6cb-23" aria-hidden="true" tabindex="-1"></a><span class="ss">            </span><span class="sc">{</span>sql<span class="sc">}</span></span>
-<span id="8ae0e6cb-24"><a href="#8ae0e6cb-24" aria-hidden="true" tabindex="-1"></a><span class="ss">        ) as q</span></span>
-<span id="8ae0e6cb-25"><a href="#8ae0e6cb-25" aria-hidden="true" tabindex="-1"></a><span class="ss">    group by</span></span>
-<span id="8ae0e6cb-26"><a href="#8ae0e6cb-26" aria-hidden="true" tabindex="-1"></a><span class="ss">        area_id, location_id, extract(year from sample_date)</span></span>
-<span id="8ae0e6cb-27"><a href="#8ae0e6cb-27" aria-hidden="true" tabindex="-1"></a><span class="ss">"""</span></span>
-<span id="8ae0e6cb-28"><a href="#8ae0e6cb-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="8ae0e6cb-29"><a href="#8ae0e6cb-29" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.read_database_uri(</span>
-<span id="8ae0e6cb-30"><a href="#8ae0e6cb-30" aria-hidden="true" tabindex="-1"></a>    sql,</span>
-<span id="8ae0e6cb-31"><a href="#8ae0e6cb-31" aria-hidden="true" tabindex="-1"></a>    uri,</span>
-<span id="8ae0e6cb-32"><a href="#8ae0e6cb-32" aria-hidden="true" tabindex="-1"></a>    engine<span class="op">=</span><span class="st">"connectorx"</span>,</span>
-<span id="8ae0e6cb-33"><a href="#8ae0e6cb-33" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="8ae0e6cb-34"><a href="#8ae0e6cb-34" aria-hidden="true" tabindex="-1"></a>show(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="7a1db25b"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="7a1db25b-1"><a href="#7a1db25b-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="7a1db25b-2"><a href="#7a1db25b-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="7a1db25b-3"><a href="#7a1db25b-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7a1db25b-4"><a href="#7a1db25b-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
+<span id="7a1db25b-5"><a href="#7a1db25b-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7a1db25b-6"><a href="#7a1db25b-6" aria-hidden="true" tabindex="-1"></a><span class="co"># https://mwouts.github.io/itables/quick_start.html</span></span>
+<span id="7a1db25b-7"><a href="#7a1db25b-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> itables</span>
+<span id="7a1db25b-8"><a href="#7a1db25b-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> itables <span class="im">import</span> init_notebook_mode, show</span>
+<span id="7a1db25b-9"><a href="#7a1db25b-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7a1db25b-10"><a href="#7a1db25b-10" aria-hidden="true" tabindex="-1"></a>init_notebook_mode(all_interactive<span class="op">=</span><span class="va">True</span>)</span>
+<span id="7a1db25b-11"><a href="#7a1db25b-11" aria-hidden="true" tabindex="-1"></a>itables.options.classes <span class="op">=</span> [<span class="st">"display"</span>, <span class="st">"nowrap"</span>, <span class="st">"compact"</span>, <span class="st">"table"</span>, <span class="st">"table-striped"</span>]</span>
+<span id="7a1db25b-12"><a href="#7a1db25b-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7a1db25b-13"><a href="#7a1db25b-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7a1db25b-14"><a href="#7a1db25b-14" aria-hidden="true" tabindex="-1"></a>uri <span class="op">=</span> <span class="ss">f'postgresql://</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_USER"</span>)<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_PASSWORD"</span>)<span class="sc">}</span><span class="ss">@</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_HOST"</span>)<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_PORT"</span>)<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>os<span class="sc">.</span>getenv(<span class="st">"POSTGRES_DATABASE"</span>)<span class="sc">}</span><span class="ss">'</span></span>
+<span id="7a1db25b-15"><a href="#7a1db25b-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7a1db25b-16"><a href="#7a1db25b-16" aria-hidden="true" tabindex="-1"></a>sql <span class="op">=</span> Path(<span class="st">"../../../static/sql/bottle.sql"</span>).read_text()</span>
+<span id="7a1db25b-17"><a href="#7a1db25b-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7a1db25b-18"><a href="#7a1db25b-18" aria-hidden="true" tabindex="-1"></a>sql <span class="op">=</span> <span class="ss">f"""</span></span>
+<span id="7a1db25b-19"><a href="#7a1db25b-19" aria-hidden="true" tabindex="-1"></a><span class="ss">    select</span></span>
+<span id="7a1db25b-20"><a href="#7a1db25b-20" aria-hidden="true" tabindex="-1"></a><span class="ss">        area_id, location_id, extract(year from sample_date), count(*) as nrows</span></span>
+<span id="7a1db25b-21"><a href="#7a1db25b-21" aria-hidden="true" tabindex="-1"></a><span class="ss">    from</span></span>
+<span id="7a1db25b-22"><a href="#7a1db25b-22" aria-hidden="true" tabindex="-1"></a><span class="ss">        (</span></span>
+<span id="7a1db25b-23"><a href="#7a1db25b-23" aria-hidden="true" tabindex="-1"></a><span class="ss">            </span><span class="sc">{</span>sql<span class="sc">}</span></span>
+<span id="7a1db25b-24"><a href="#7a1db25b-24" aria-hidden="true" tabindex="-1"></a><span class="ss">        ) as q</span></span>
+<span id="7a1db25b-25"><a href="#7a1db25b-25" aria-hidden="true" tabindex="-1"></a><span class="ss">    group by</span></span>
+<span id="7a1db25b-26"><a href="#7a1db25b-26" aria-hidden="true" tabindex="-1"></a><span class="ss">        area_id, location_id, extract(year from sample_date)</span></span>
+<span id="7a1db25b-27"><a href="#7a1db25b-27" aria-hidden="true" tabindex="-1"></a><span class="ss">"""</span></span>
+<span id="7a1db25b-28"><a href="#7a1db25b-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="7a1db25b-29"><a href="#7a1db25b-29" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pl.read_database_uri(</span>
+<span id="7a1db25b-30"><a href="#7a1db25b-30" aria-hidden="true" tabindex="-1"></a>    sql,</span>
+<span id="7a1db25b-31"><a href="#7a1db25b-31" aria-hidden="true" tabindex="-1"></a>    uri,</span>
+<span id="7a1db25b-32"><a href="#7a1db25b-32" aria-hidden="true" tabindex="-1"></a>    engine<span class="op">=</span><span class="st">"connectorx"</span>,</span>
+<span id="7a1db25b-33"><a href="#7a1db25b-33" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="7a1db25b-34"><a href="#7a1db25b-34" aria-hidden="true" tabindex="-1"></a>show(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display">
 <script>
@@ -386,7 +391,7 @@ This is the <code>init_notebook_mode</code> cell from ITables v2.2.4<br>
 </div>
 </div>
 <div class="cell-output cell-output-display">
-<table id="itables_2b02f503_d772_4f04_8e91_cf07760403f7" class="display nowrap compact table table-striped" data-quarto-disable-processing="true" style="table-layout:auto;width:auto;margin:auto;caption-side:bottom">
+<table id="itables_e1e02a41_a919_4f80_9fe1_e7b9b51ed30b" class="display nowrap compact table table-striped" data-quarto-disable-processing="true" style="table-layout:auto;width:auto;margin:auto;caption-side:bottom">
 <thead>
     <tr style="text-align: right;">
       
@@ -461,7 +466,7 @@ Loading ITables v2.2.4 from the <code>init_notebook_mode</code> cell...
 <script type="module">
     const { DataTable, jQuery: $ } = await import(window._datatables_src_for_itables_2_2_4);
 
-    document.querySelectorAll("#itables_2b02f503_d772_4f04_8e91_cf07760403f7:not(.dataTable)").forEach(table => {
+    document.querySelectorAll("#itables_e1e02a41_a919_4f80_9fe1_e7b9b51ed30b:not(.dataTable)").forEach(table => {
         if (!(table instanceof HTMLTableElement))
             return;
 
@@ -946,7 +951,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <footer class="footer">
   <div class="nav-footer">
     <div class="nav-footer-left">
-<p>© 2025 GSI Environmental Inc.</p>
+<p>© 2025 <a href="https://gsienv.com">GSI Environmental Inc.</a></p>
 </div>   
     <div class="nav-footer-center">
 <p><a href="https://gsienv.com"><img src="../../../static/logo.svg" class="img-fluid" alt="GSI Environmental Inc." width="65"></a></p>
