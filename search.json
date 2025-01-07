@@ -69,48 +69,6 @@
     ]
   },
   {
-    "objectID": "content/data-management/index.html",
-    "href": "content/data-management/index.html",
-    "title": "Data Management",
-    "section": "",
-    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
-    "crumbs": [
-      "Data Management"
-    ]
-  },
-  {
-    "objectID": "content/data-management/index.html#overview",
-    "href": "content/data-management/index.html#overview",
-    "title": "Data Management",
-    "section": "",
-    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
-    "crumbs": [
-      "Data Management"
-    ]
-  },
-  {
-    "objectID": "content/analysis/index.html",
-    "href": "content/analysis/index.html",
-    "title": "Data Analysis",
-    "section": "",
-    "text": "Data analysis performed by…",
-    "crumbs": [
-      "Analysis",
-      "Data Analysis"
-    ]
-  },
-  {
-    "objectID": "content/analysis/index.html#overview",
-    "href": "content/analysis/index.html#overview",
-    "title": "Data Analysis",
-    "section": "",
-    "text": "Data analysis performed by…",
-    "crumbs": [
-      "Analysis",
-      "Data Analysis"
-    ]
-  },
-  {
     "objectID": "content/examples.html",
     "href": "content/examples.html",
     "title": "Examples",
@@ -158,6 +116,72 @@
     "title": "Examples",
     "section": "Download Files",
     "text": "Download Files\nDocs\n Download Python requirements"
+  },
+  {
+    "objectID": "content/analysis/index.html",
+    "href": "content/analysis/index.html",
+    "title": "Data Analysis",
+    "section": "",
+    "text": "Data analysis performed by…",
+    "crumbs": [
+      "Analysis",
+      "Data Analysis"
+    ]
+  },
+  {
+    "objectID": "content/analysis/index.html#overview",
+    "href": "content/analysis/index.html#overview",
+    "title": "Data Analysis",
+    "section": "",
+    "text": "Data analysis performed by…",
+    "crumbs": [
+      "Analysis",
+      "Data Analysis"
+    ]
+  },
+  {
+    "objectID": "content/data-management/index.html",
+    "href": "content/data-management/index.html",
+    "title": "Data Management",
+    "section": "",
+    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "crumbs": [
+      "Data Management"
+    ]
+  },
+  {
+    "objectID": "content/data-management/index.html#overview",
+    "href": "content/data-management/index.html#overview",
+    "title": "Data Management",
+    "section": "",
+    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "crumbs": [
+      "Data Management"
+    ]
+  },
+  {
+    "objectID": "content/inventory/datasets/bottle-chlorophyll.html",
+    "href": "content/inventory/datasets/bottle-chlorophyll.html",
+    "title": "Chlorophyll Bottle Data",
+    "section": "",
+    "text": "This is an example heat map to summarise chlorophyll data by month/year.\n\n\nCode\nsuppressMessages({\n library(dplyr)\n library(ggplot2)\n})\n\n# SQL query - Only grab bottle chlorophyll\nsql &lt;- readLines(\"../../../static/sql/bottle.sql\", n = 164) |&gt; paste(collapse = \"\\n\")\nsql &lt;- paste(sql, \"and lr.analyte = 'ChlorophyllA'\")\n\n## create connection to database\ncon &lt;- DBI::dbConnect(\n  drv = RPostgres::Postgres(),\n  dbname = Sys.getenv(\"POSTGRES_DATABASE\"),\n  host = Sys.getenv(\"POSTGRES_HOST\"),\n  port = Sys.getenv(\"POSTGRES_PORT\"),\n  user = Sys.getenv(\"POSTGRES_USER\"),\n  password = Sys.getenv(\"POSTGRES_PASSWORD\")\n)\n\n# query db\nbottle_data &lt;- DBI::dbGetQuery(con, sql)\nDBI::dbDisconnect(con)\n\n# Create summary\ngrouping &lt;- c(\"year\", \"month\", \"analyte\", \"units\")\ndata_summary &lt;- bottle_data |&gt;\n    mutate(\n     year = lubridate::year(sample_date),\n     month = lubridate::month(sample_date)\n    ) |&gt; \n    summarise(\n     .by = all_of(grouping),\n     n = n(),\n     q25 = quantile(result, 0.25, na.rm = TRUE), \n     median = quantile(result, 0.5, na.rm = TRUE), \n     q75 = quantile(result, 0.75, na.rm = TRUE)\n  ) |&gt; \n  mutate(\n    abb_month = month.abb[month],\n    sum_date = as.Date(glue::glue(\"{year}-{month}-01\"))\n  ) |&gt; \n  arrange(year, month)\n\nfill_missing_data &lt;- function(df) {\n  # full set of years and months\n  MONTH_YEAR &lt;- unique(paste(df$year, \"-\", df$month))\n  missing_data &lt;- expand.grid(\n    year = seq(min(df$year), max(df$year), by = 1),\n    month = 1:12\n  ) |&gt; \n    mutate(month_year = paste(year, \"-\", month)) |&gt; \n    filter(!month_year %in% MONTH_YEAR) \n\n  bind_rows(df, missing_data)\n}\n\nhm_d &lt;- data_summary |&gt; \n  fill_missing_data() |&gt;\n  mutate(\n    across(c(q25, median, q75), ~signif(x = .x, digits = 3)),\n    abb_month = month.abb[month],\n    abb_month = factor(abb_month, levels = month.abb),\n    tooltip = glue::glue(\n      \"&lt;b&gt;{abb_month} {year}&lt;/b&gt;\",\n      \"&lt;b&gt;Count&lt;/b&gt;: {format(n, big.mark = ',')}\",\n      \"&lt;b&gt;25th&lt;/b&gt;: {q25} {units}\",\n      \"&lt;b&gt;Median&lt;/b&gt;: {median} {units}\",\n      \"&lt;b&gt;75th&lt;/b&gt;: {q75} {units}\",\n      .sep = \"&lt;br&gt;\",\n      .na = \"--\"\n    )\n  )\n\n# Create Heat Map\np &lt;- ggplot(data = hm_d, aes(x = abb_month, y = year, fill = median)) + \n  #geom_tile(color = \"black\", width = 1) +\n  ggiraph::geom_tile_interactive(aes(tooltip = tooltip), color = \"black\", width = 1) +\n  scale_fill_distiller(\n    palette = \"Greens\",\n    direction = 1,\n    na.value = \"gray90\"\n  ) +\n  #coord_fixed() + # keep tile as square\n  scale_x_discrete(expand = c(0,0), position = \"top\") +\n  scale_y_reverse(expand = c(0,0)) +\n  labs(ylab = \"Year\", fill = \"Median Chlorophyll (ug/L)\") +\n  theme_bw() +\n  theme(\n    axis.title.x=element_blank(),\n    panel.grid.major = element_blank(),\n    panel.grid.minor = element_blank(),\n    legend.position = \"bottom\"\n  )\n\nggiraph::girafe(ggobj = p)",
+    "crumbs": [
+      "Inventory",
+      "Datasets",
+      "Chlorophyll Bottle Data"
+    ]
+  },
+  {
+    "objectID": "content/inventory/datasets/bottle-chlorophyll.html#chlorophyll-data",
+    "href": "content/inventory/datasets/bottle-chlorophyll.html#chlorophyll-data",
+    "title": "Chlorophyll Bottle Data",
+    "section": "",
+    "text": "This is an example heat map to summarise chlorophyll data by month/year.\n\n\nCode\nsuppressMessages({\n library(dplyr)\n library(ggplot2)\n})\n\n# SQL query - Only grab bottle chlorophyll\nsql &lt;- readLines(\"../../../static/sql/bottle.sql\", n = 164) |&gt; paste(collapse = \"\\n\")\nsql &lt;- paste(sql, \"and lr.analyte = 'ChlorophyllA'\")\n\n## create connection to database\ncon &lt;- DBI::dbConnect(\n  drv = RPostgres::Postgres(),\n  dbname = Sys.getenv(\"POSTGRES_DATABASE\"),\n  host = Sys.getenv(\"POSTGRES_HOST\"),\n  port = Sys.getenv(\"POSTGRES_PORT\"),\n  user = Sys.getenv(\"POSTGRES_USER\"),\n  password = Sys.getenv(\"POSTGRES_PASSWORD\")\n)\n\n# query db\nbottle_data &lt;- DBI::dbGetQuery(con, sql)\nDBI::dbDisconnect(con)\n\n# Create summary\ngrouping &lt;- c(\"year\", \"month\", \"analyte\", \"units\")\ndata_summary &lt;- bottle_data |&gt;\n    mutate(\n     year = lubridate::year(sample_date),\n     month = lubridate::month(sample_date)\n    ) |&gt; \n    summarise(\n     .by = all_of(grouping),\n     n = n(),\n     q25 = quantile(result, 0.25, na.rm = TRUE), \n     median = quantile(result, 0.5, na.rm = TRUE), \n     q75 = quantile(result, 0.75, na.rm = TRUE)\n  ) |&gt; \n  mutate(\n    abb_month = month.abb[month],\n    sum_date = as.Date(glue::glue(\"{year}-{month}-01\"))\n  ) |&gt; \n  arrange(year, month)\n\nfill_missing_data &lt;- function(df) {\n  # full set of years and months\n  MONTH_YEAR &lt;- unique(paste(df$year, \"-\", df$month))\n  missing_data &lt;- expand.grid(\n    year = seq(min(df$year), max(df$year), by = 1),\n    month = 1:12\n  ) |&gt; \n    mutate(month_year = paste(year, \"-\", month)) |&gt; \n    filter(!month_year %in% MONTH_YEAR) \n\n  bind_rows(df, missing_data)\n}\n\nhm_d &lt;- data_summary |&gt; \n  fill_missing_data() |&gt;\n  mutate(\n    across(c(q25, median, q75), ~signif(x = .x, digits = 3)),\n    abb_month = month.abb[month],\n    abb_month = factor(abb_month, levels = month.abb),\n    tooltip = glue::glue(\n      \"&lt;b&gt;{abb_month} {year}&lt;/b&gt;\",\n      \"&lt;b&gt;Count&lt;/b&gt;: {format(n, big.mark = ',')}\",\n      \"&lt;b&gt;25th&lt;/b&gt;: {q25} {units}\",\n      \"&lt;b&gt;Median&lt;/b&gt;: {median} {units}\",\n      \"&lt;b&gt;75th&lt;/b&gt;: {q75} {units}\",\n      .sep = \"&lt;br&gt;\",\n      .na = \"--\"\n    )\n  )\n\n# Create Heat Map\np &lt;- ggplot(data = hm_d, aes(x = abb_month, y = year, fill = median)) + \n  #geom_tile(color = \"black\", width = 1) +\n  ggiraph::geom_tile_interactive(aes(tooltip = tooltip), color = \"black\", width = 1) +\n  scale_fill_distiller(\n    palette = \"Greens\",\n    direction = 1,\n    na.value = \"gray90\"\n  ) +\n  #coord_fixed() + # keep tile as square\n  scale_x_discrete(expand = c(0,0), position = \"top\") +\n  scale_y_reverse(expand = c(0,0)) +\n  labs(ylab = \"Year\", fill = \"Median Chlorophyll (ug/L)\") +\n  theme_bw() +\n  theme(\n    axis.title.x=element_blank(),\n    panel.grid.major = element_blank(),\n    panel.grid.minor = element_blank(),\n    legend.position = \"bottom\"\n  )\n\nggiraph::girafe(ggobj = p)",
+    "crumbs": [
+      "Inventory",
+      "Datasets",
+      "Chlorophyll Bottle Data"
+    ]
   },
   {
     "objectID": "content/inventory/datasets/ctd-mooring.html",
