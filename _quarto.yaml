@@ -36,7 +36,7 @@ website:
     keyboard-shortcut: ["/", "H"]
     show-item-context: true
   page-footer:
-    left: "&copy; 2025 GSI Environmental Inc."
+    left: "&copy; 2025 [GSI Environmental Inc.](https://gsienv.com)"
     center: |
       [![](/static/logo.svg){fig-alt="GSI Environmental Inc." width=65px}](https://gsienv.com)
     right: |
@@ -58,7 +58,7 @@ website:
       - icon: github
         href: https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2
         text: "GitHub"
-      
+
   sidebar:
     - id: inventory
       collapse-level: 2
@@ -90,17 +90,19 @@ format:
     theme:
       light: [cosmo, static/theme.scss]
     css: static/styles.css
+    brand: _brand.yaml
     toc: true
     toc-depth: 3
     code-copy: true
     code-fold: true
-    code-overflow: scroll
+    code-overflow: wrap
     code-line-numbers: false
     code-annotations: below
-    highlight-style: github
+    highlight-style: github-dark
     link-external-newwindow: true
     filters:
       - black-formatter
+      - downloadthis
       - diagram
     grid:
       sidebar-width: 250px
