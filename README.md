@@ -138,3 +138,9 @@ The runner is hosted on the `posit` machine (`192.168.0.10`) and is managed by C
     > To stop the service, run `sudo ./svc.sh stop`
 
 14. The runner should now be available in the GitHub repository under `Settings` > `Actions` > `Runners`
+
+## Notes
+
+Below is a rough outline of how the data inventory summaries will be structured:
+
+![](./region-inventory-outline.png)

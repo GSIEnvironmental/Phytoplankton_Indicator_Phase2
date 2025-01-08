@@ -14,6 +14,9 @@ project:
     - "*.ipynb"
     - "*.Rmd"
     - "*.md"
+  # https://quarto.org/docs/projects/scripts.html
+  pre-render: 
+    - "scripts/pre-render/region_inventory.py"
 
 # https://github.com/quarto-dev/quarto-actions/blob/main/examples/example-02-freeze.md
 execute:
@@ -67,9 +70,12 @@ website:
       contents:
         - content/inventory/index.qmd
         - auto: "content/inventory/*"
-        - section: "Datasets"
+        # - section: "Datasets"
+        #   contents:
+        #     - auto: "content/inventory/datasets/*"
+        - section: "Regions"
           contents:
-            - auto: "content/inventory/datasets/*"
+            - auto: "content/inventory/regions/*"
     - id: analysis
       collapse-level: 1
       align: left
