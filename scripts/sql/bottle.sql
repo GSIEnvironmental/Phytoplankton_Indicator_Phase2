@@ -1,8 +1,11 @@
+drop materialized view if exists app.bottle;
+create materialized view app.bottle as
 select
     reg.area_id,
     loc.location_id,
     loc.description as loc_desc,
     lt.description as loc_type,
+    loc.loc_geom,
     st_x(loc.loc_geom) as x_coord,
     st_y(loc.loc_geom) as y_coord,
     st_srid(loc.loc_geom) as srid,
@@ -177,3 +180,4 @@ order by
     lr.analyte,
     lr.meas_basis,
     lr.fraction
+with data;

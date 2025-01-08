@@ -1,8 +1,11 @@
+drop materialized view if exists app.ctd;
+create materialized view app.ctd as
 select
     reg.area_id,
     loc.location_id,
     loc.description as loc_desc,
     lt.description as loc_type,
+    loc.loc_geom,
     st_x(loc.loc_geom) as x_coord,
     st_y(loc.loc_geom) as y_coord,
     st_srid(loc.loc_geom) as srid,
@@ -120,6 +123,7 @@ left join e_unit as u1 on u1.unit = sm.depth_units
 cross join (select * from e_unit where unit = 'm') as u2
 where
     cs.reportable
+    and (loc.loc_type != 'Mooring' or loc.loc_type is null)
 order by
         loc.location_id,
         sc.sample_date,
@@ -128,3 +132,4 @@ order by
         smc.description,
         fmm.description,
         cs.replicate
+with data;

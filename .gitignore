@@ -12,3 +12,9 @@
 /.condaenv/
 /.luarc.json
 /_*.local
+
+# Anything that isnt groupings.csv or region_template.jinja in the regions folder
+content/inventory/regions/*
+# Un-ignore specific files
+!content/inventory/regions/groupings.csv
+!content/inventory/regions/region_template.jinja

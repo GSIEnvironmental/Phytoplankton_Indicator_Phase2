@@ -3,7 +3,9 @@ title: Chlorophyll Bottle Data
 ---
 
 ## Chlorophyll Data
-This is an example heat map to summarise chlorophyll data by month/year. 
+
+This is an example heat map to summarise chlorophyll data by month/year.
+
 ```{r}
 suppressMessages({
  library(dplyr)
@@ -100,5 +102,4 @@ p <- ggplot(data = hm_d, aes(x = abb_month, y = year, fill = median)) +
   )
 
 ggiraph::girafe(ggobj = p)
-
 ```

@@ -1,0 +1,214 @@
+---
+title: {{ region }}
+order: {{ order }}
+echo: false
+---
+
+::: {.panel-tabset}
+
+{% for group in groupings %}
+
+## {{ group.0 }}-{{ group.1 }}
+
+### Data By Provider
+
+Table with a summary by data provider (dropdown select for the provider)
+
+```{python}
+import os
+from pathlib import Path
+
+import polars as pl
+import itables
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+itables.options.classes = ["display", "nowrap", "compact", "table", "table-striped"]
+
+uri = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DATABASE")}'
+
+sql = f"""
+select
+    extract(year from sample_date) as year, count(*) as n_measurements
+from
+    {% if group.0 == 'Bottle' %}
+        app.bottle
+    {% elif group.0 == 'CTD' %}
+        app.ctd
+    {% elif group.0 == 'Mooring' %}
+        app.mooring
+    {% elif group.0 == 'Sp Abund' %}
+        app.sp_abund
+    {% endif %}
+where
+    1=1
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    {% if group.0 == 'Bottle' %}
+        and analyte = '{{ group.1 }}'
+    {% elif group.0 == 'CTD' %}
+        and parameter = '{{ group.1 }}'
+    {% elif group.0 == 'Mooring' %}
+        and parameter = '{{ group.1 }}'
+    {% elif group.0 == 'Sp Abund' %}
+        and parameter = '{{ group.1 }}'
+    {% endif %}
+group by
+    extract(year from sample_date)
+"""
+
+df = pl.read_database_uri(
+    sql,
+    uri,
+    engine="connectorx",
+)
+
+if df.is_empty():
+    print("No data available")
+else:
+    show(df)
+```
+
+### Geographical Extent
+
+```{python}
+import os
+import random
+import json
+
+import polars as pl
+import plotly.express as px
+
+
+sql = f"""
+select distinct
+    location_id, 
+    loc_desc as description,
+    st_x(st_transform(loc_geom, 4326)) as lon, 
+    st_y(st_transform(loc_geom, 4326)) as lat
+from
+    {% if group.0 == 'Bottle' %}
+        app.bottle
+    {% elif group.0 == 'CTD' %}
+        app.ctd
+    {% elif group.0 == 'Mooring' %}
+        app.mooring
+    {% elif group.0 == 'Sp Abund' %}
+        app.sp_abund
+    {% endif %}
+where
+    1=1
+    and loc_geom is not null
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    {% if group.0 == 'Bottle' %}
+        and analyte = '{{ group.1 }}'
+    {% elif group.0 == 'CTD' %}
+        and parameter = '{{ group.1 }}'
+    {% elif group.0 == 'Mooring' %}
+        and parameter = '{{ group.1 }}'
+    {% elif group.0 == 'Sp Abund' %}
+        and parameter = '{{ group.1 }}'
+    {% endif %}
+"""
+
+df = pl.read_database_uri(
+    sql,
+    uri,
+    engine="connectorx",
+)
+
+fig = px.scatter_mapbox(
+    lat=df["lat"],
+    lon=df["lon"],
+    hover_name=df["location_id"],
+    mapbox_style="open-street-map",
+).update_layout(
+    margin={"r": 0, "t": 0, "l": 0, "b": 0},
+)
+
+if df.is_empty():
+    print("No data available")
+    fig = None
+    
+fig
+```
+
+### Timeseries
+
+X = month/year, Y = number of samples by month
+
+```{python}
+import os
+import random
+import json
+
+import polars as pl
+import plotly.express as px
+
+sql = f"""
+select
+    date_trunc('month', sample_date)::date as sample_date,
+    count(*) as n_measurements
+from
+    {% if group.0 == 'Bottle' %}
+        app.bottle
+    {% elif group.0 == 'CTD' %}
+        app.ctd
+    {% elif group.0 == 'Mooring' %}
+        app.mooring
+    {% elif group.0 == 'Sp Abund' %}
+        app.sp_abund
+    {% endif %}
+where
+    1=1
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    {% if group.0 == 'Bottle' %}
+        and analyte = '{{ group.1 }}'
+    {% elif group.0 == 'CTD' %}
+        and parameter = '{{ group.1 }}'
+    {% elif group.0 == 'Mooring' %}
+        and parameter = '{{ group.1 }}'
+    {% elif group.0 == 'Sp Abund' %}
+        and parameter = '{{ group.1 }}'
+    {% endif %}
+group by
+    date_trunc('month', sample_date)::date
+"""
+
+df = pl.read_database_uri(
+    sql,
+    uri,
+    engine="connectorx",
+)
+
+fig = px.bar(
+    df,
+    x="sample_date",
+    y="n_measurements",
+    labels={"sample_date": "Sample Date", "n_measurements": "Number of Measurements"},
+    title="Number of Measurements by Month",
+)
+
+if df.is_empty():
+    print("No data available")
+    fig = None
+
+fig
+```
+
+### Depth distribution
+
+Vertical histogram by depth in 5 meter bins. Histogram should show counts of observations
+
+### Heatmap
+
+Noah's heatmap
+
+{% endfor %}
+
+:::
