@@ -5,19 +5,47 @@
     <lastmod>2025-01-07T23:05:10.193Z</lastmod>
   </url>
   <url>
-    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/datasets/sp-abund-biovol-comm.html</loc>
-    <lastmod>2024-12-27T22:39:37.328Z</lastmod>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/washington-coast-slope.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
   </url>
   <url>
-    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/datasets/bottle.html</loc>
-    <lastmod>2024-12-27T22:39:37.328Z</lastmod>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/washington-coast-ocean.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
   </url>
   <url>
-    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/examples.html</loc>
-    <lastmod>2024-12-26T22:42:43.834Z</lastmod>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/washington-coast-columbia-river-estuary.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
   </url>
   <url>
-    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/analysis/index.html</loc>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/vancouver-island-shelf.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/strait-of-juan-de-fuca.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/strait-of-georgia-north.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/san-juan-and-gulf-islands.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/puget-sound-south-sound.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/puget-sound-hood-canal.html</loc>
+    <lastmod>2025-01-08T22:12:30.152Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/global.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/index.html</loc>
     <lastmod>2025-01-07T23:05:10.193Z</lastmod>
   </url>
   <url>
@@ -25,15 +53,55 @@
     <lastmod>2024-12-27T22:39:37.328Z</lastmod>
   </url>
   <url>
-    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/datasets/bottle-chlorophyll.html</loc>
-    <lastmod>2025-01-07T19:57:05.569Z</lastmod>
-  </url>
-  <url>
-    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/datasets/ctd-mooring.html</loc>
-    <lastmod>2024-12-27T22:39:37.328Z</lastmod>
-  </url>
-  <url>
-    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/index.html</loc>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/analysis/index.html</loc>
     <lastmod>2025-01-07T23:05:10.193Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/examples.html</loc>
+    <lastmod>2024-12-26T22:42:43.834Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/bellingham-bay.html</loc>
+    <lastmod>2025-01-08T22:12:30.152Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/puget-sound-admiralty-inlet.html</loc>
+    <lastmod>2025-01-08T22:12:30.152Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/puget-sound-main-basin.html</loc>
+    <lastmod>2025-01-08T22:12:30.152Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/puget-sound-whidbey-basin.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/strait-of-georgia-central.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/strait-of-georgia-south.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/vancouver-island-ocean.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/vancouver-island-slope.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/washington-coast-grays-harbor.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/washington-coast-shelf.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GSIEnvironmental.github.io/Phytoplankton_Indicator_Phase2/content/inventory/regions/washington-coast-willapa-bay.html</loc>
+    <lastmod>2025-01-08T22:12:30.156Z</lastmod>
   </url>
 </urlset>
