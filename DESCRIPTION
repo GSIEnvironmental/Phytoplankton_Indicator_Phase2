@@ -1,0 +1,10 @@
+Imports:
+    DBI,
+    RPostgres,
+    reticulate,
+    dplyr,
+    glue,
+    ggplot2,
+    reactable,
+    ggiraph
+  
