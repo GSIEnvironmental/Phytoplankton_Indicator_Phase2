@@ -5,6 +5,10 @@ echo: false
 engine: knitr
 ---
 
+```{r}
+ # reticulate by the knitr engine to use python and r chunks in the same .qmd file
+ reticulate::use_virtualenv('../../../.venv', required=TRUE) 
+```
 ::: {.panel-tabset}
 
 {% for group in groupings %}
