@@ -2,6 +2,7 @@
 title: {{ region }}
 order: {{ order }}
 echo: false
+engine: knitr
 ---
 
 ::: {.panel-tabset}
@@ -14,20 +15,22 @@ echo: false
 
 Table with a summary by data provider (dropdown select for the provider)
 
-```{python}
-import os
-from pathlib import Path
+```{r}
+suppressMessages({
+ library(dplyr)
+ library(ggplot2)
+})
 
-import polars as pl
-import itables
-from itables import init_notebook_mode, show
+con <- DBI::dbConnect(
+  drv = RPostgres::Postgres(),
+  dbname = Sys.getenv("POSTGRES_DATABASE"),
+  host = Sys.getenv("POSTGRES_HOST"),
+  port = Sys.getenv("POSTGRES_PORT"),
+  user = Sys.getenv("POSTGRES_USER"),
+  password = Sys.getenv("POSTGRES_PASSWORD")
+)
 
-init_notebook_mode(all_interactive=True)
-itables.options.classes = ["display", "nowrap", "compact", "table", "table-striped"]
-
-uri = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DATABASE")}'
-
-sql = f"""
+sql <- "
 select
     extract(year from sample_date) as year, count(*) as n_measurements
 from
@@ -56,18 +59,15 @@ where
     {% endif %}
 group by
     extract(year from sample_date)
-"""
+"
 
-df = pl.read_database_uri(
-    sql,
-    uri,
-    engine="connectorx",
-)
+data <- DBI::dbGetQuery(con, sql)
+if(nrow(data) == 0) {
+    cat("No data available")
+} else {
+    reactable::reactable(data, searchable = TRUE, showPageSizeOptions = TRUE)
+} 
 
-if df.is_empty():
-    print("No data available")
-else:
-    show(df)
 ```
 
 ### Geographical Extent
@@ -80,6 +80,7 @@ import json
 import polars as pl
 import plotly.express as px
 
+uri = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DATABASE")}'
 
 sql = f"""
 select distinct
@@ -207,7 +208,98 @@ Vertical histogram by depth in 5 meter bins. Histogram should show counts of obs
 
 ### Heatmap
 
-Noah's heatmap
+```{r}
+suppressMessages({
+ library(dplyr)
+ library(ggplot2)
+})
+
+sql <- "
+select
+    extract(year from sample_date) as year,
+    extract(month from sample_date) as month,
+    count(*) as n_measurements,
+    percentile_cont(0.5) within group (order by result) as median,
+    string_agg(distinct units, ', ') as units
+from
+    {% if group.0 == 'Bottle' %}
+        app.bottle
+    {% elif group.0 == 'CTD' %}
+        app.ctd
+    {% elif group.0 == 'Mooring' %}
+        app.mooring
+    {% elif group.0 == 'Sp Abund' %}
+        app.sp_abund
+    {% endif %}
+where
+    1=1
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    {% if group.0 == 'Bottle' %}
+        and analyte = '{{ group.1 }}'
+    {% elif group.0 == 'CTD' %}
+        and parameter = '{{ group.1 }}'
+    {% elif group.0 == 'Mooring' %}
+        and parameter = '{{ group.1 }}'
+    {% elif group.0 == 'Sp Abund' %}
+        and parameter = '{{ group.1 }}'
+    {% endif %}
+group by
+    extract(year from sample_date),
+    extract(month from sample_date)
+    "
+
+# query db
+data <- DBI::dbGetQuery(con, sql) |>
+    filter(!is.na(year), !is.na(month))
+DBI::dbDisconnect(con)
+
+if(nrow(data) == 0){
+    cat("No data available")
+}else{
+    data <- data |>
+      mutate(
+        abb_month = factor(month.abb[month], levels = month.abb),
+        median = signif(median, digits = 3),
+        tooltip = glue::glue(
+      "<b>{abb_month} {year}</b>",
+      "<b>Count</b>: {format(n_measurements, big.mark = ',')}",
+      "<b>Median</b>: {median} {units}",
+      .sep = "<br>",
+      .na = "--"
+    )
+      )
+
+  p <- ggplot(data = data, aes(x = abb_month, y = year, fill = median)) + 
+  #geom_tile(color = "black", width = 1) +
+  ggiraph::geom_tile_interactive(aes(tooltip = tooltip), color = "black", width = 1) +
+  scale_fill_distiller(
+    palette = "Greens",
+    direction = 1,
+    na.value = "gray90"
+  ) +
+  #coord_fixed() + # keep tile as square
+  scale_x_discrete(
+    breaks = month.abb,
+    drop = FALSE,
+    expand = c(0,0), 
+    position = "top"
+  ) +
+  scale_y_reverse(expand = c(0,0)) +
+  labs(y = "Year", fill = paste0("Median {{ group.1 }}\n(",unique(data$units),")")) +
+  theme_bw() +
+  theme(
+    axis.title.x=element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    #legend.position = "bottom"
+  )
+if('{{ region }}' != "Global") ggiraph::girafe(ggobj = p) # interactive charts not showing for global for some reason.
+else p
+}
+
+```
 
 {% endfor %}
 
