@@ -15,7 +15,7 @@ project:
     - "*.Rmd"
     - "*.md"
   # https://quarto.org/docs/projects/scripts.html
-  pre-render: 
+  pre-render:
     - "scripts/pre-render/region_inventory.py"
 
 # https://github.com/quarto-dev/quarto-actions/blob/main/examples/example-02-freeze.md

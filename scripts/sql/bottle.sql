@@ -1,3 +1,5 @@
+-- refresh materialized view app.bottle with data;
+
 drop materialized view if exists app.bottle;
 create materialized view app.bottle as
 select
@@ -11,6 +13,7 @@ select
     st_srid(loc.loc_geom) as srid,
     loc.coord_sys,
     locm.description as loc_method,
+    st.contact as "provider",
     st.study_id,
     st.full_name as study_name,
     sdoc.sample_doc,

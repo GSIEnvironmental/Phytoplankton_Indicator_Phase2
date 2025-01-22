@@ -1,3 +1,5 @@
+-- refresh materialized view app.ctd with data;
+
 drop materialized view if exists app.ctd;
 create materialized view app.ctd as
 select
@@ -11,6 +13,7 @@ select
     st_srid(loc.loc_geom) as srid,
     loc.coord_sys,
     locm.description as loc_method,
+    st.contact as "provider",
     st.study_id,
     st.full_name as study_name,
     sl.study_loc_id,
