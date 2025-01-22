@@ -1,229 +1,233 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Phytoplankton Indicator",
+    "objectID": "content/analysis/python-analysis.html",
+    "href": "content/analysis/python-analysis.html",
+    "title": "Reading Parquet Datasets using Python",
     "section": "",
-    "text": "The Phytoplankton Vital Sign Project is curating phytoplankton-related data from Puget Sound into two separate digital repositories. The first is the Phytoplankton Data Inventory, which is a list of organizations conducting phytoplankton monitoring in Puget Sound waters and includes information on program objectives, metrics collected, sampling duration and frequency, site locations, and sampling and analytical methods. Data collected by these monitoring efforts are being compiled and ingested into a Phytoplankton Monitoring Database. This database will serve as the source of data for analyses of long-term trends and other statistical analyses relevant to identifying metrics or patterns for use in a phytoplankton-based Vital Sign.\nThe Phytoplankton Data Inventory will help improve understanding of the different methods being used across programs for collecting phytoplankton-related data. The Phytoplankton Monitoring Database will allow the project team to conduct statistical analyses of data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify gaps in monitoring data. The inventory and database together will inform future Phase 3 work to create a single, large-scale regional metric (Vital Sign) for communicating ecosystem-scale status, trends and recovery in Puget Sound related to the phytoplankton community."
+    "text": "This page describes how to read Parquet datasets in Python using PyArrow, Pandas, and Polars. This page does not go into detail on how to perform analysis on the data once it is read into one of these libraries. For more information on how to perform analysis using one of these libraries, see the following:",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
   },
   {
-    "objectID": "index.html#overview",
-    "href": "index.html#overview",
-    "title": "Phytoplankton Indicator",
-    "section": "",
-    "text": "The Phytoplankton Vital Sign Project is curating phytoplankton-related data from Puget Sound into two separate digital repositories. The first is the Phytoplankton Data Inventory, which is a list of organizations conducting phytoplankton monitoring in Puget Sound waters and includes information on program objectives, metrics collected, sampling duration and frequency, site locations, and sampling and analytical methods. Data collected by these monitoring efforts are being compiled and ingested into a Phytoplankton Monitoring Database. This database will serve as the source of data for analyses of long-term trends and other statistical analyses relevant to identifying metrics or patterns for use in a phytoplankton-based Vital Sign.\nThe Phytoplankton Data Inventory will help improve understanding of the different methods being used across programs for collecting phytoplankton-related data. The Phytoplankton Monitoring Database will allow the project team to conduct statistical analyses of data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify gaps in monitoring data. The inventory and database together will inform future Phase 3 work to create a single, large-scale regional metric (Vital Sign) for communicating ecosystem-scale status, trends and recovery in Puget Sound related to the phytoplankton community."
+    "objectID": "content/analysis/python-analysis.html#python-setup",
+    "href": "content/analysis/python-analysis.html#python-setup",
+    "title": "Reading Parquet Datasets using Python",
+    "section": "Python Setup",
+    "text": "Python Setup\n\nInstall Python version 3.10, 3.11, or 3.12.\nInstall required dependencies: python -m pip install jupyter pyarrow polars pandas",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
   },
   {
-    "objectID": "index.html#geographic-coverage",
-    "href": "index.html#geographic-coverage",
-    "title": "Phytoplankton Indicator",
-    "section": "Geographic Coverage",
-    "text": "Geographic Coverage\nBased on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay)."
+    "objectID": "content/analysis/python-analysis.html#import-libraries",
+    "href": "content/analysis/python-analysis.html#import-libraries",
+    "title": "Reading Parquet Datasets using Python",
+    "section": "Import Libraries",
+    "text": "Import Libraries\n\n# Standard libraries\nimport logging\nfrom pathlib import Path\n\n# Third party libraries\nimport polars as pl\nimport pyarrow as pa\nimport pyarrow.parquet as pq\nimport pandas as pd",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
   },
   {
-    "objectID": "content/inventory/regions/washington-coast-slope.html",
-    "href": "content/inventory/regions/washington-coast-slope.html",
-    "title": "Washington Coast - Slope",
+    "objectID": "content/analysis/python-analysis.html#configure-logging",
+    "href": "content/analysis/python-analysis.html#configure-logging",
+    "title": "Reading Parquet Datasets using Python",
+    "section": "Configure Logging",
+    "text": "Configure Logging\n\nlogging.basicConfig(level=logging.INFO, format=\"%(message)s\")\nlogger = logging.getLogger(__name__)",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
+  },
+  {
+    "objectID": "content/analysis/python-analysis.html#define-variables",
+    "href": "content/analysis/python-analysis.html#define-variables",
+    "title": "Reading Parquet Datasets using Python",
+    "section": "Define Variables",
+    "text": "Define Variables\n\n# Path to the parent folder containing the Parquet dataset folder.\n# If the dataset is in the current working directory, this can be set to \".\".\nDATA_DIR = Path(\"data\")\n# Name of the dataset folder (i.e., \"Bottle\", \"CTD\", \"Mooring\", \"Species_Abundance\").\nDATASET = Path(\"Bottle\")\n\n# Full path to the dataset folder.\nDATASET_DIR = DATA_DIR / DATASET",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
+  },
+  {
+    "objectID": "content/analysis/python-analysis.html#reading-dataset-metadata",
+    "href": "content/analysis/python-analysis.html#reading-dataset-metadata",
+    "title": "Reading Parquet Datasets using Python",
+    "section": "Reading Dataset Metadata",
+    "text": "Reading Dataset Metadata\n\nmeta = pq.read_metadata(DATASET_DIR / \"_metadata\")\nlogger.info(f\"Parquet format version: {meta.format_version}\")\nlogger.info(f\"Columns: {meta.num_columns}\")\nlogger.info(f\"Row groups: {meta.num_row_groups}\")\nlogger.info(f\"Rows: {meta.num_rows}\")\n\nfor key, value in meta.metadata.items():\n    if \"schema\" not in key.decode(\"utf-8\"):\n        logger.info(f\"{key.decode('utf-8')}: {value.decode('utf-8')}\")\n\nParquet format version: 2.6\nColumns: 55\nRow groups: 50\nRows: 100500\ncreated_at: 2025-01-22T12:17:58.319666\nauthor: GSI Environmental Inc.\ndataset_name: Bottle",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
+  },
+  {
+    "objectID": "content/analysis/python-analysis.html#reading-the-dataset-with-pyarrow",
+    "href": "content/analysis/python-analysis.html#reading-the-dataset-with-pyarrow",
+    "title": "Reading Parquet Datasets using Python",
+    "section": "Reading the Dataset with PyArrow",
+    "text": "Reading the Dataset with PyArrow\nPyArrow reference\n\nds = pq.ParquetDataset(DATASET_DIR)\n\nlogger.info(f\"Files: {len(ds.files)}\")\ncolumns = ds.schema.names\ndtypes = ds.schema.types\ncolumn_dtypes = {column: dtype for column, dtype in zip(columns, dtypes)}\nlogger.info(\"Columns:\")\nfor column, dtype in column_dtypes.items():\n    logger.info(f\"  {str(column):&lt;20}: {dtype}\")\n\nFiles: 27\nColumns:\n  area_id             : string\n  location_id         : string\n  loc_desc            : string\n  loc_type            : string\n  loc_geom            : string\n  x_coord             : double\n  y_coord             : double\n  srid                : int64\n  coord_sys           : string\n  loc_method          : string\n  provider            : string\n  study_id            : string\n  study_name          : string\n  sample_doc          : string\n  sample_date         : timestamp[us]\n  coll_scheme         : string\n  sample_material     : string\n  sample_id           : string\n  sample_desc         : string\n  original_sample_id  : string\n  upper_depth         : double\n  lower_depth         : double\n  depth_units         : string\n  split_type          : string\n  sample_no           : string\n  lab                 : string\n  lab_pkg             : string\n  material            : string\n  material_analyzed   : string\n  labsample           : string\n  lab_rep             : string\n  method_code         : string\n  method_desc         : string\n  chem_class          : string\n  cas_rn              : string\n  analyte             : string\n  analyte_name        : string\n  result              : double\n  qualifiers          : string\n  lab_flags           : string\n  validator_flags     : string\n  detected            : string\n  detection_limit     : double\n  quantification_limit: double\n  reporting_limit     : double\n  units               : string\n  meas_basis          : string\n  fraction            : string\n  dilution_factor     : double\n  data_quality        : string\n  qa_level            : string\n  date_analyzed       : string\n  date_extracted      : string\n  doc_file            : string\n  comments            : string\n  provider_key        : dictionary&lt;values=string, indices=int32, ordered=0&gt;\n  year                : dictionary&lt;values=int32, indices=int32, ordered=0&gt;\n\n\n\n# Read the entire dataset\ndata = ds.read()\n# Read a couple of columns\ndata = ds.read(\n    columns=[\n        \"area_id\",\n        \"location_id\",\n        \"upper_depth\",\n        \"lower_depth\",\n        \"depth_units\",\n        \"sample_date\",\n        \"analyte\",\n        \"result\",\n        \"units\",\n    ]\n)\n# Show the data\ndata\n\npyarrow.Table\narea_id: string\nlocation_id: string\nupper_depth: double\nlower_depth: double\ndepth_units: string\nsample_date: timestamp[us]\nanalyte: string\nresult: double\nunits: string\n----\narea_id: [[\"Puget Sound: Main Basin\",\"Puget Sound: Main Basin\",\"Puget Sound: Main Basin\",\"Puget Sound: Main Basin\",\"Puget Sound: Main Basin\",...,\"Puget Sound: Whidbey Basin\",\"Puget Sound: Whidbey Basin\",\"Puget Sound: Whidbey Basin\",\"Puget Sound: Whidbey Basin\",\"Puget Sound: Whidbey Basin\"],[\"Puget Sound: Whidbey Basin\",\"Puget Sound: Whidbey Basin\",\"Puget Sound: Whidbey Basin\",\"Puget Sound: Whidbey Basin\",\"Puget Sound: Whidbey Basin\",...,\"Puget Sound: Hood Canal\",\"Puget Sound: Hood Canal\",\"Puget Sound: Hood Canal\",\"Puget Sound: Hood Canal\",\"Puget Sound: Hood Canal\"],...,[\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",...,\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\"],[\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",...,\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\",\"Puget Sound: Admiralty Inlet\"]]\nlocation_id: [[\"UW_P31\",\"UW_P31\",\"UW_P31\",\"UW_P31\",\"UW_P31\",...,\"UW_P4\",\"UW_P4\",\"UW_P4\",\"UW_P4\",\"UW_P4\"],[\"UW_P5\",\"UW_P5\",\"UW_P5\",\"UW_P5\",\"UW_P5\",...,\"UW_P9\",\"UW_P9\",\"UW_P9\",\"UW_P9\",\"UW_P9\"],...,[\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",...,\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\"],[\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",...,\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\",\"WA_Ecology_ADM001\"]]\nupper_depth: [[2.12,2.12,2.12,2.12,2.12,...,83.18,83.18,83.18,83.18,83.18],[1.4,1.4,1.4,1.4,1.4,...,67.1,67.1,67.1,67.1,67.1],...,[1,1,1,1,1,...,52,52,52,52,52],[52.5,52.5,52.5,52.5,52.5,...,72.5,72.5,72.5,72.5,73]]\nlower_depth: [[2.12,2.12,2.12,2.12,2.12,...,83.18,83.18,83.18,83.18,83.18],[1.4,1.4,1.4,1.4,1.4,...,67.1,67.1,67.1,67.1,67.1],...,[1,1,1,1,1,...,52,52,52,52,52],[52.5,52.5,52.5,52.5,52.5,...,72.5,72.5,72.5,72.5,73]]\ndepth_units: [[\"m\",\"m\",\"m\",\"m\",\"m\",...,\"m\",\"m\",\"m\",\"m\",\"m\"],[\"m\",\"m\",\"m\",\"m\",\"m\",...,\"m\",\"m\",\"m\",\"m\",\"m\"],...,[\"m\",\"m\",\"m\",\"m\",\"m\",...,\"m\",\"m\",\"m\",\"m\",\"m\"],[\"m\",\"m\",\"m\",\"m\",\"m\",...,\"m\",\"m\",\"m\",\"m\",\"m\"]]\nsample_date: [[1999-06-15 08:39:43.000000,1999-06-15 08:39:43.000000,1999-06-15 08:39:43.000000,1999-06-15 08:39:43.000000,1999-06-15 08:39:43.000000,...,1999-12-20 03:58:50.000000,1999-12-20 03:58:50.000000,1999-12-20 03:58:50.000000,1999-12-20 03:58:50.000000,1999-12-20 03:58:50.000000],[1999-08-19 01:41:22.000000,1999-08-19 01:41:22.000000,1999-08-19 01:41:22.000000,1999-08-19 01:41:22.000000,1999-08-19 01:41:22.000000,...,1999-12-21 13:24:20.000000,1999-12-21 13:24:20.000000,1999-12-21 13:24:20.000000,1999-12-21 13:24:20.000000,1999-12-21 13:24:20.000000],...,[2003-01-07 11:09:03.000000,2003-01-07 11:09:03.000000,2003-01-07 11:09:03.000000,2003-01-07 11:09:03.000000,2003-01-07 11:09:03.000000,...,2003-07-08 11:11:53.000000,2003-07-08 11:11:53.000000,2003-07-08 11:11:53.000000,2003-07-08 11:11:53.000000,2003-07-08 11:11:53.000000],[2003-07-08 11:11:55.000000,2003-07-08 11:11:55.000000,2003-07-08 11:11:55.000000,2003-07-08 11:11:55.000000,2003-07-08 11:11:55.000000,...,2003-08-05 10:34:02.000000,2003-08-05 10:34:02.000000,2003-08-05 10:34:02.000000,2003-08-05 10:34:02.000000,2003-08-05 10:34:03.000000]]\nanalyte: [[\"Nitrate\",\"Nitrite\",\"Phosphate\",\"Ammonium\",\"Chlorophyll\",...,\"Nitrite\",\"Phosphate\",\"Ammonium\",\"DO\",\"Silicate\"],[\"Nitrate\",\"Nitrite\",\"Phosphate\",\"Ammonium\",\"Chlorophyll\",...,\"Nitrite\",\"Phosphate\",\"Ammonium\",\"DO\",\"Silicate\"],...,[\"FluoroAdjusted\",\"ChlorophyllA\",\"Pheophytin\",\"ChlorophyllA\",\"Pheophytin\",...,\"FluoroAdjusted\",\"ChlorophyllA\",\"Pheophytin\",\"ChlorophyllA\",\"Pheophytin\"],[\"FluoroAdjusted\",\"ChlorophyllA\",\"Pheophytin\",\"ChlorophyllA\",\"Pheophytin\",...,\"ChlorophyllA\",\"Pheophytin\",\"ChlorophyllA\",\"Pheophytin\",\"FluoroAdjusted\"]]\nresult: [[11.77,0.63,1.41,2.56,2.5,...,0.14,2.71,0.04,5.43,63.45],[12.6,0.37,1.47,0.55,2.04,...,0.11,2.7,0,5.9,62.4],...,[0,0,0,0,0,...,7.639,0,0,0,0],[7.7178,0,0,0,0,...,0,0,0,0,2.8891]]\nunits: [[\"uM\",\"uM\",\"uM\",\"uM\",\"ug/L\",...,\"uM\",\"uM\",\"uM\",\"mg/L\",\"uM\"],[\"uM\",\"uM\",\"uM\",\"uM\",\"ug/L\",...,\"uM\",\"uM\",\"uM\",\"mg/L\",\"uM\"],...,[\"mg/m3\",\"ug/L\",\"ug/L\",\"ug/L\",\"ug/L\",...,\"mg/m3\",\"ug/L\",\"ug/L\",\"ug/L\",\"ug/L\"],[\"mg/m3\",\"ug/L\",\"ug/L\",\"ug/L\",\"ug/L\",...,\"ug/L\",\"ug/L\",\"ug/L\",\"ug/L\",\"mg/m3\"]]\n\n\n\n# Optionally, convert to a pandas DataFrame\ndf = data.to_pandas()\n# Show the first few rows\ndf.head()\n\n\n\n\n\n\n\n\narea_id\nlocation_id\nupper_depth\nlower_depth\ndepth_units\nsample_date\nanalyte\nresult\nunits\n\n\n\n\n0\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nNitrate\n11.77\nuM\n\n\n1\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nNitrite\n0.63\nuM\n\n\n2\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nPhosphate\n1.41\nuM\n\n\n3\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nAmmonium\n2.56\nuM\n\n\n4\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nChlorophyll\n2.50\nug/L",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
+  },
+  {
+    "objectID": "content/analysis/python-analysis.html#reading-the-dataset-with-pandas",
+    "href": "content/analysis/python-analysis.html#reading-the-dataset-with-pandas",
+    "title": "Reading Parquet Datasets using Python",
+    "section": "Reading the Dataset with Pandas",
+    "text": "Reading the Dataset with Pandas\nPandas reference\n\n# Convert the data to a Pandas DataFrame\ndf = pd.read_parquet(DATASET_DIR, engine=\"pyarrow\")\n# Read a couple of columns\ndf = pd.read_parquet(\n    DATASET_DIR,\n    columns=[\n        \"area_id\",\n        \"location_id\",\n        \"upper_depth\",\n        \"lower_depth\",\n        \"depth_units\",\n        \"sample_date\",\n        \"analyte\",\n        \"result\",\n        \"units\",\n    ],\n    engine=\"pyarrow\",\n)\n# Show the first few rows\ndf.head()\n\n\n\n\n\n\n\n\narea_id\nlocation_id\nupper_depth\nlower_depth\ndepth_units\nsample_date\nanalyte\nresult\nunits\n\n\n\n\n0\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nNitrate\n11.77\nuM\n\n\n1\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nNitrite\n0.63\nuM\n\n\n2\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nPhosphate\n1.41\nuM\n\n\n3\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nAmmonium\n2.56\nuM\n\n\n4\nPuget Sound: Main Basin\nUW_P31\n2.12\n2.12\nm\n1999-06-15 08:39:43\nChlorophyll\n2.50\nug/L",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
+  },
+  {
+    "objectID": "content/analysis/python-analysis.html#reading-the-dataset-with-polars",
+    "href": "content/analysis/python-analysis.html#reading-the-dataset-with-polars",
+    "title": "Reading Parquet Datasets using Python",
+    "section": "Reading the Dataset with Polars",
+    "text": "Reading the Dataset with Polars\nPolars reference\n\n# Read the entire dataset\ndf = pl.read_parquet(DATASET_DIR, use_pyarrow=True)\n# Select a couple of columns\ndf = df.select(\n    [\n        \"area_id\",\n        \"location_id\",\n        \"upper_depth\",\n        \"lower_depth\",\n        \"depth_units\",\n        \"sample_date\",\n        \"analyte\",\n        \"result\",\n        \"units\",\n    ]\n)\n# Show the first few rows\ndf.head()\n\n\nshape: (5, 9)\n\n\n\narea_id\nlocation_id\nupper_depth\nlower_depth\ndepth_units\nsample_date\nanalyte\nresult\nunits\n\n\nstr\nstr\nf64\nf64\nstr\ndatetime[μs]\nstr\nf64\nstr\n\n\n\n\n\"Puget Sound: Main Basin\"\n\"UW_P31\"\n2.12\n2.12\n\"m\"\n1999-06-15 08:39:43\n\"Nitrate\"\n11.77\n\"uM\"\n\n\n\"Puget Sound: Main Basin\"\n\"UW_P31\"\n2.12\n2.12\n\"m\"\n1999-06-15 08:39:43\n\"Nitrite\"\n0.63\n\"uM\"\n\n\n\"Puget Sound: Main Basin\"\n\"UW_P31\"\n2.12\n2.12\n\"m\"\n1999-06-15 08:39:43\n\"Phosphate\"\n1.41\n\"uM\"\n\n\n\"Puget Sound: Main Basin\"\n\"UW_P31\"\n2.12\n2.12\n\"m\"\n1999-06-15 08:39:43\n\"Ammonium\"\n2.56\n\"uM\"\n\n\n\"Puget Sound: Main Basin\"\n\"UW_P31\"\n2.12\n2.12\n\"m\"\n1999-06-15 08:39:43\n\"Chlorophyll\"\n2.5\n\"ug/L\"",
+    "crumbs": [
+      "Analysis",
+      "Reading Parquet Datasets using Python"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/washington-coast-willapa-bay.html",
+    "href": "content/inventory/regions/washington-coast-willapa-bay.html",
+    "title": "Washington Coast - Willapa Bay",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Washington Coast - Slope"
+      "Washington Coast - Willapa Bay"
     ]
   },
   {
-    "objectID": "content/inventory/regions/washington-coast-ocean.html",
-    "href": "content/inventory/regions/washington-coast-ocean.html",
-    "title": "Washington Coast - Ocean",
+    "objectID": "content/inventory/regions/washington-coast-shelf.html",
+    "href": "content/inventory/regions/washington-coast-shelf.html",
+    "title": "Washington Coast - Shelf",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Washington Coast - Ocean"
+      "Washington Coast - Shelf"
     ]
   },
   {
-    "objectID": "content/inventory/regions/washington-coast-columbia-river-estuary.html",
-    "href": "content/inventory/regions/washington-coast-columbia-river-estuary.html",
-    "title": "Washington Coast - Columbia River Estuary",
+    "objectID": "content/inventory/regions/washington-coast-grays-harbor.html",
+    "href": "content/inventory/regions/washington-coast-grays-harbor.html",
+    "title": "Washington Coast - Grays Harbor",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Washington Coast - Columbia River Estuary"
+      "Washington Coast - Grays Harbor"
     ]
   },
   {
-    "objectID": "content/inventory/regions/vancouver-island-shelf.html",
-    "href": "content/inventory/regions/vancouver-island-shelf.html",
-    "title": "Vancouver Island - Shelf",
+    "objectID": "content/inventory/regions/vancouver-island-slope.html",
+    "href": "content/inventory/regions/vancouver-island-slope.html",
+    "title": "Vancouver Island - Slope",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Vancouver Island - Shelf"
+      "Vancouver Island - Slope"
     ]
   },
   {
-    "objectID": "content/inventory/regions/strait-of-juan-de-fuca.html",
-    "href": "content/inventory/regions/strait-of-juan-de-fuca.html",
-    "title": "Strait of Juan de Fuca",
-    "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Strait of Juan de Fuca"
-    ]
-  },
-  {
-    "objectID": "content/inventory/regions/strait-of-georgia-north.html",
-    "href": "content/inventory/regions/strait-of-georgia-north.html",
-    "title": "Strait of Georgia - North",
+    "objectID": "content/inventory/regions/vancouver-island-ocean.html",
+    "href": "content/inventory/regions/vancouver-island-ocean.html",
+    "title": "Vancouver Island - Ocean",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Strait of Georgia - North"
+      "Vancouver Island - Ocean"
     ]
   },
   {
-    "objectID": "content/inventory/regions/san-juan-and-gulf-islands.html",
-    "href": "content/inventory/regions/san-juan-and-gulf-islands.html",
-    "title": "San Juan and Gulf Islands",
+    "objectID": "content/inventory/regions/strait-of-georgia-south.html",
+    "href": "content/inventory/regions/strait-of-georgia-south.html",
+    "title": "Strait of Georgia - South",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Strait of Georgia - South"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/strait-of-georgia-central.html",
+    "href": "content/inventory/regions/strait-of-georgia-central.html",
+    "title": "Strait of Georgia - Central",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Strait of Georgia - Central"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/puget-sound-whidbey-basin.html",
+    "href": "content/inventory/regions/puget-sound-whidbey-basin.html",
+    "title": "Puget Sound - Whidbey Basin",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Puget Sound - Whidbey Basin"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/puget-sound-main-basin.html",
+    "href": "content/inventory/regions/puget-sound-main-basin.html",
+    "title": "Puget Sound - Main Basin",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Puget Sound - Main Basin"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/puget-sound-admiralty-inlet.html",
+    "href": "content/inventory/regions/puget-sound-admiralty-inlet.html",
+    "title": "Puget Sound - Admiralty Inlet",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Puget Sound - Admiralty Inlet"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/bellingham-bay.html",
+    "href": "content/inventory/regions/bellingham-bay.html",
+    "title": "Bellingham Bay",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "San Juan and Gulf Islands"
-    ]
-  },
-  {
-    "objectID": "content/inventory/regions/puget-sound-south-sound.html",
-    "href": "content/inventory/regions/puget-sound-south-sound.html",
-    "title": "Puget Sound - South Sound",
-    "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Puget Sound - South Sound"
-    ]
-  },
-  {
-    "objectID": "content/inventory/regions/puget-sound-hood-canal.html",
-    "href": "content/inventory/regions/puget-sound-hood-canal.html",
-    "title": "Puget Sound - Hood Canal",
-    "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Puget Sound - Hood Canal"
-    ]
-  },
-  {
-    "objectID": "content/inventory/regions/global.html",
-    "href": "content/inventory/regions/global.html",
-    "title": "Global",
-    "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Global"
-    ]
-  },
-  {
-    "objectID": "content/inventory/index.html",
-    "href": "content/inventory/index.html",
-    "title": "Data Inventory",
-    "section": "",
-    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.",
-    "crumbs": [
-      "Inventory",
-      "Data Inventory"
-    ]
-  },
-  {
-    "objectID": "content/inventory/index.html#overview",
-    "href": "content/inventory/index.html#overview",
-    "title": "Data Inventory",
-    "section": "",
-    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.",
-    "crumbs": [
-      "Inventory",
-      "Data Inventory"
-    ]
-  },
-  {
-    "objectID": "content/inventory/index.html#studies",
-    "href": "content/inventory/index.html#studies",
-    "title": "Data Inventory",
-    "section": "Studies",
-    "text": "Studies\n\n\n\nshape: (8, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UW_HCDOP\"\n\"Hood Canal Dissolved Oxygen Pr…\n\"University of Washington\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
-    "crumbs": [
-      "Inventory",
-      "Data Inventory"
-    ]
-  },
-  {
-    "objectID": "content/inventory/index.html#sampling-locations",
-    "href": "content/inventory/index.html#sampling-locations",
-    "title": "Data Inventory",
-    "section": "Sampling Locations",
-    "text": "Sampling Locations",
-    "crumbs": [
-      "Inventory",
-      "Data Inventory"
-    ]
-  },
-  {
-    "objectID": "content/data-management/index.html",
-    "href": "content/data-management/index.html",
-    "title": "Data Management",
-    "section": "",
-    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
-    "crumbs": [
-      "Data Management"
-    ]
-  },
-  {
-    "objectID": "content/data-management/index.html#overview",
-    "href": "content/data-management/index.html#overview",
-    "title": "Data Management",
-    "section": "",
-    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
-    "crumbs": [
-      "Data Management"
-    ]
-  },
-  {
-    "objectID": "content/analysis/index.html",
-    "href": "content/analysis/index.html",
-    "title": "Data Analysis",
-    "section": "",
-    "text": "Caution\n\n\n\nThis page is still under construction.",
-    "crumbs": [
-      "Analysis",
-      "Data Analysis"
-    ]
-  },
-  {
-    "objectID": "content/analysis/index.html#overview",
-    "href": "content/analysis/index.html#overview",
-    "title": "Data Analysis",
-    "section": "Overview",
-    "text": "Overview\nData analysis performed by…",
-    "crumbs": [
-      "Analysis",
-      "Data Analysis"
+      "Bellingham Bay"
     ]
   },
   {
@@ -276,135 +280,230 @@
     "text": "Download Files\nDocs\n Download Python requirements"
   },
   {
-    "objectID": "content/inventory/regions/bellingham-bay.html",
-    "href": "content/inventory/regions/bellingham-bay.html",
-    "title": "Bellingham Bay",
+    "objectID": "content/analysis/index.html",
+    "href": "content/analysis/index.html",
+    "title": "Data Analysis",
+    "section": "",
+    "text": "Caution\n\n\n\nThis page is still under construction.",
+    "crumbs": [
+      "Analysis",
+      "Data Analysis"
+    ]
+  },
+  {
+    "objectID": "content/analysis/index.html#overview",
+    "href": "content/analysis/index.html#overview",
+    "title": "Data Analysis",
+    "section": "Overview",
+    "text": "Overview\nData analysis performed by…",
+    "crumbs": [
+      "Analysis",
+      "Data Analysis"
+    ]
+  },
+  {
+    "objectID": "content/data-management/index.html",
+    "href": "content/data-management/index.html",
+    "title": "Data Management",
+    "section": "",
+    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "crumbs": [
+      "Data Management"
+    ]
+  },
+  {
+    "objectID": "content/data-management/index.html#overview",
+    "href": "content/data-management/index.html#overview",
+    "title": "Data Management",
+    "section": "",
+    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "crumbs": [
+      "Data Management"
+    ]
+  },
+  {
+    "objectID": "content/inventory/index.html",
+    "href": "content/inventory/index.html",
+    "title": "Data Inventory",
+    "section": "",
+    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.",
+    "crumbs": [
+      "Inventory",
+      "Data Inventory"
+    ]
+  },
+  {
+    "objectID": "content/inventory/index.html#overview",
+    "href": "content/inventory/index.html#overview",
+    "title": "Data Inventory",
+    "section": "",
+    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.",
+    "crumbs": [
+      "Inventory",
+      "Data Inventory"
+    ]
+  },
+  {
+    "objectID": "content/inventory/index.html#studies",
+    "href": "content/inventory/index.html#studies",
+    "title": "Data Inventory",
+    "section": "Studies",
+    "text": "Studies\n\n\n\nshape: (8, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UW_HCDOP\"\n\"Hood Canal Dissolved Oxygen Pr…\n\"University of Washington\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
+    "crumbs": [
+      "Inventory",
+      "Data Inventory"
+    ]
+  },
+  {
+    "objectID": "content/inventory/index.html#sampling-locations",
+    "href": "content/inventory/index.html#sampling-locations",
+    "title": "Data Inventory",
+    "section": "Sampling Locations",
+    "text": "Sampling Locations",
+    "crumbs": [
+      "Inventory",
+      "Data Inventory"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/global.html",
+    "href": "content/inventory/regions/global.html",
+    "title": "Global",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Global"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/puget-sound-hood-canal.html",
+    "href": "content/inventory/regions/puget-sound-hood-canal.html",
+    "title": "Puget Sound - Hood Canal",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Puget Sound - Hood Canal"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/puget-sound-south-sound.html",
+    "href": "content/inventory/regions/puget-sound-south-sound.html",
+    "title": "Puget Sound - South Sound",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Puget Sound - South Sound"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/san-juan-and-gulf-islands.html",
+    "href": "content/inventory/regions/san-juan-and-gulf-islands.html",
+    "title": "San Juan and Gulf Islands",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Bellingham Bay"
+      "San Juan and Gulf Islands"
     ]
   },
   {
-    "objectID": "content/inventory/regions/puget-sound-admiralty-inlet.html",
-    "href": "content/inventory/regions/puget-sound-admiralty-inlet.html",
-    "title": "Puget Sound - Admiralty Inlet",
+    "objectID": "content/inventory/regions/strait-of-georgia-north.html",
+    "href": "content/inventory/regions/strait-of-georgia-north.html",
+    "title": "Strait of Georgia - North",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Puget Sound - Admiralty Inlet"
+      "Strait of Georgia - North"
     ]
   },
   {
-    "objectID": "content/inventory/regions/puget-sound-main-basin.html",
-    "href": "content/inventory/regions/puget-sound-main-basin.html",
-    "title": "Puget Sound - Main Basin",
+    "objectID": "content/inventory/regions/strait-of-juan-de-fuca.html",
+    "href": "content/inventory/regions/strait-of-juan-de-fuca.html",
+    "title": "Strait of Juan de Fuca",
+    "section": "",
+    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\n\n\n\n\n\n\nGeographical Extent\n\n\n                                                \n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\n                                                \n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\n\n\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
+    "crumbs": [
+      "Inventory",
+      "Regions",
+      "Strait of Juan de Fuca"
+    ]
+  },
+  {
+    "objectID": "content/inventory/regions/vancouver-island-shelf.html",
+    "href": "content/inventory/regions/vancouver-island-shelf.html",
+    "title": "Vancouver Island - Shelf",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Puget Sound - Main Basin"
+      "Vancouver Island - Shelf"
     ]
   },
   {
-    "objectID": "content/inventory/regions/puget-sound-whidbey-basin.html",
-    "href": "content/inventory/regions/puget-sound-whidbey-basin.html",
-    "title": "Puget Sound - Whidbey Basin",
+    "objectID": "content/inventory/regions/washington-coast-columbia-river-estuary.html",
+    "href": "content/inventory/regions/washington-coast-columbia-river-estuary.html",
+    "title": "Washington Coast - Columbia River Estuary",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Puget Sound - Whidbey Basin"
+      "Washington Coast - Columbia River Estuary"
     ]
   },
   {
-    "objectID": "content/inventory/regions/strait-of-georgia-central.html",
-    "href": "content/inventory/regions/strait-of-georgia-central.html",
-    "title": "Strait of Georgia - Central",
+    "objectID": "content/inventory/regions/washington-coast-ocean.html",
+    "href": "content/inventory/regions/washington-coast-ocean.html",
+    "title": "Washington Coast - Ocean",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Strait of Georgia - Central"
+      "Washington Coast - Ocean"
     ]
   },
   {
-    "objectID": "content/inventory/regions/strait-of-georgia-south.html",
-    "href": "content/inventory/regions/strait-of-georgia-south.html",
-    "title": "Strait of Georgia - South",
+    "objectID": "content/inventory/regions/washington-coast-slope.html",
+    "href": "content/inventory/regions/washington-coast-slope.html",
+    "title": "Washington Coast - Slope",
     "section": "",
     "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
     "crumbs": [
       "Inventory",
       "Regions",
-      "Strait of Georgia - South"
+      "Washington Coast - Slope"
     ]
   },
   {
-    "objectID": "content/inventory/regions/vancouver-island-ocean.html",
-    "href": "content/inventory/regions/vancouver-island-ocean.html",
-    "title": "Vancouver Island - Ocean",
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Phytoplankton Indicator",
     "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Vancouver Island - Ocean"
-    ]
+    "text": "The Phytoplankton Vital Sign Project is curating phytoplankton-related data from Puget Sound into two separate digital repositories. The first is the Phytoplankton Data Inventory, which is a list of organizations conducting phytoplankton monitoring in Puget Sound waters and includes information on program objectives, metrics collected, sampling duration and frequency, site locations, and sampling and analytical methods. Data collected by these monitoring efforts are being compiled and ingested into a Phytoplankton Monitoring Database. This database will serve as the source of data for analyses of long-term trends and other statistical analyses relevant to identifying metrics or patterns for use in a phytoplankton-based Vital Sign.\nThe Phytoplankton Data Inventory will help improve understanding of the different methods being used across programs for collecting phytoplankton-related data. The Phytoplankton Monitoring Database will allow the project team to conduct statistical analyses of data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify gaps in monitoring data. The inventory and database together will inform future Phase 3 work to create a single, large-scale regional metric (Vital Sign) for communicating ecosystem-scale status, trends and recovery in Puget Sound related to the phytoplankton community."
   },
   {
-    "objectID": "content/inventory/regions/vancouver-island-slope.html",
-    "href": "content/inventory/regions/vancouver-island-slope.html",
-    "title": "Vancouver Island - Slope",
+    "objectID": "index.html#overview",
+    "href": "index.html#overview",
+    "title": "Phytoplankton Indicator",
     "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Vancouver Island - Slope"
-    ]
+    "text": "The Phytoplankton Vital Sign Project is curating phytoplankton-related data from Puget Sound into two separate digital repositories. The first is the Phytoplankton Data Inventory, which is a list of organizations conducting phytoplankton monitoring in Puget Sound waters and includes information on program objectives, metrics collected, sampling duration and frequency, site locations, and sampling and analytical methods. Data collected by these monitoring efforts are being compiled and ingested into a Phytoplankton Monitoring Database. This database will serve as the source of data for analyses of long-term trends and other statistical analyses relevant to identifying metrics or patterns for use in a phytoplankton-based Vital Sign.\nThe Phytoplankton Data Inventory will help improve understanding of the different methods being used across programs for collecting phytoplankton-related data. The Phytoplankton Monitoring Database will allow the project team to conduct statistical analyses of data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify gaps in monitoring data. The inventory and database together will inform future Phase 3 work to create a single, large-scale regional metric (Vital Sign) for communicating ecosystem-scale status, trends and recovery in Puget Sound related to the phytoplankton community."
   },
   {
-    "objectID": "content/inventory/regions/washington-coast-grays-harbor.html",
-    "href": "content/inventory/regions/washington-coast-grays-harbor.html",
-    "title": "Washington Coast - Grays Harbor",
-    "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Washington Coast - Grays Harbor"
-    ]
-  },
-  {
-    "objectID": "content/inventory/regions/washington-coast-shelf.html",
-    "href": "content/inventory/regions/washington-coast-shelf.html",
-    "title": "Washington Coast - Shelf",
-    "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Washington Coast - Shelf"
-    ]
-  },
-  {
-    "objectID": "content/inventory/regions/washington-coast-willapa-bay.html",
-    "href": "content/inventory/regions/washington-coast-willapa-bay.html",
-    "title": "Washington Coast - Willapa Bay",
-    "section": "",
-    "text": "Bottle-ChlorophyllBottle-ChlorophyllACTD-ChlorophyllAMooring-Chlorophyll\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available\n\n\n\n\n\n\nData By Provider\nTable with a summary by data provider (dropdown select for the provider)\n\n\nNo data available\n\n\n\n\nGeographical Extent\n\n\nNo data available\n\n\n\n\nTimeseries\nX = month/year, Y = number of samples by month\n\n\nNo data available\n\n\n\n\nDepth distribution\nVertical histogram by depth in 5 meter bins. Histogram should show counts of observations\n\n\nHeatmap\n\n\nNo data available",
-    "crumbs": [
-      "Inventory",
-      "Regions",
-      "Washington Coast - Willapa Bay"
-    ]
+    "objectID": "index.html#geographic-coverage",
+    "href": "index.html#geographic-coverage",
+    "title": "Phytoplankton Indicator",
+    "section": "Geographic Coverage",
+    "text": "Geographic Coverage\nBased on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay)."
   }
 ]
