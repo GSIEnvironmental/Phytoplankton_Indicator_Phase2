@@ -6,5 +6,7 @@ Imports:
     glue,
     ggplot2,
     reactable,
-    ggiraph
+    ggiraph,
+    plotly,
+    htmltools
   

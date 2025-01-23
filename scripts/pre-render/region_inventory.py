@@ -48,7 +48,7 @@ regions = {
     region: re.sub(r"\W+", "-", region.lower().strip())
     for region in (
         pl.read_database_uri(
-            "select replace(area_id, ': ', ' - ') as area_id from d_area order by area_id;",  # limit 1;",
+            "select area_id from d_area order by area_id;",  # limit 1;", 
             uri,
             engine="connectorx",
         )
@@ -56,7 +56,6 @@ regions = {
         .to_list()
     )
 }
-
 
 # Assign an index to the regions so that we can order them
 region_order = {region: i + 1 for i, region in enumerate(sorted(regions.keys()))}
