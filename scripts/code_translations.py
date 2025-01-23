@@ -59,62 +59,65 @@ def get_translations(xlate_source: str) -> dict[str, pl.DataFrame]:
                 URI,
                 engine="connectorx",
             )
-            # Get the primary keys for the x table
-            pk_cols = pl.read_database_uri(
+            if not fk.is_empty():
+                # Get the primary keys for the x table
+                pk_cols = pl.read_database_uri(
+                    """
+                    SELECT
+                        string_agg('x.' || kcu.column_name, ',') as pk_cols
+                    FROM
+                        information_schema.table_constraints AS tc
+                        JOIN information_schema.key_column_usage AS kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                    WHERE
+                        tc.constraint_type = 'PRIMARY KEY'
+                        AND tc.table_name = '%s'
+                    """
+                    % (xtable),
+                    URI,
+                    engine="connectorx",
+                )["pk_cols"][0]
+                # Get all the columns for the foreign table, minus the columns "rev_time" and "rev_user"
+                vv_cols = pl.read_database_uri(
+                    """
+                    select string_agg('f.' || column_name, ',' order by ordinal_position) as cols
+                    from information_schema.columns
+                    where table_name = '%s'
+                    and table_schema = 'gsidb'
+                    and column_name not in ('rev_time', 'rev_user')
                 """
-                SELECT
-                    string_agg('x.' || kcu.column_name, ',') as pk_cols
-                FROM
-                    information_schema.table_constraints AS tc
-                    JOIN information_schema.key_column_usage AS kcu
-                    ON tc.constraint_name = kcu.constraint_name
-                WHERE
-                    tc.constraint_type = 'PRIMARY KEY'
-                    AND tc.table_name = '%s'
-                """
-                % (xtable),
-                URI,
-                engine="connectorx",
-            )["pk_cols"][0]
-            # Get all the columns for the foreign table, minus the columns "rev_time" and "rev_user"
-            vv_cols = pl.read_database_uri(
-                """
-                select string_agg('f.' || column_name, ',' order by ordinal_position) as cols
-                from information_schema.columns
-                where table_name = '%s'
-                and table_schema = 'gsidb'
-                and column_name not in ('rev_time', 'rev_user')
-            """
-                % (fk["foreign_table_name"][0]),
-                URI,
-                engine="connectorx",
-            )["cols"][0]
-            # Join the x table with the foreign table
-            # This produces a table with all source translations and their valid value definition.
-            df = pl.read_database_uri(
-                """
-                select
-                    %s,
-                    %s
-                from
-                    %s as x
-                    inner join %s as f on x.%s = f.%s
-                where x.source = '%s'
-                order by %s
-                """
-                % (
-                    pk_cols,
-                    vv_cols,
-                    xtable,
-                    fk["foreign_table_name"][0],
-                    fk["foreign_column_name"][0],
-                    fk["column_name"][0],
-                    xlate_source,
-                    pk_cols,
-                ),
-                URI,
-                engine="connectorx",
-            )
-            logging.info("Found %s translations for table %s" % (df.shape[0], xtable))
-            translations[xtable] = df
+                    % (fk["foreign_table_name"][0]),
+                    URI,
+                    engine="connectorx",
+                )["cols"][0]
+                # Join the x table with the foreign table
+                # This produces a table with all source translations and their valid value definition.
+                df = pl.read_database_uri(
+                    """
+                    select
+                        %s,
+                        %s
+                    from
+                        %s as x
+                        inner join %s as f on x.%s = f.%s
+                    where x.source = '%s'
+                    order by %s
+                    """
+                    % (
+                        pk_cols,
+                        vv_cols,
+                        xtable,
+                        fk["foreign_table_name"][0],
+                        fk["foreign_column_name"][0],
+                        fk["column_name"][0],
+                        xlate_source,
+                        pk_cols,
+                    ),
+                    URI,
+                    engine="connectorx",
+                )
+                logging.info(
+                    "Found %s translations for table %s" % (df.shape[0], xtable)
+                )
+                translations[xtable] = df
     return translations
