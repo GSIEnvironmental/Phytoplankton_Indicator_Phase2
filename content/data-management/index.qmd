@@ -1,6 +1,6 @@
 ---
 title: Data Management
-description: Phytoplankton Monitoring Database Structure and Content
+description: Phytoplankton Monitoring Data Management
 ---
 
 ## Overview

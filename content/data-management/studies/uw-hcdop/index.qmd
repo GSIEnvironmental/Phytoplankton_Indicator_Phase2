@@ -1,0 +1,60 @@
+---
+title: "Hood Canal Dissolved Oxygen Program"
+provider: "University of Washington"
+code-fold: show
+---
+
+## Data Sources
+
+- **Data Provider**: Hood Canal Dissolved Oxygen Program (HCDOP)
+- **Document title**: University of Washington Hood Canal Dissolved Oxygen Program (HCDOP)
+- **Document URL**: [http://www.hoodcanal.washington.edu/](http://www.hoodcanal.washington.edu/)
+
+A Readme pdf was provided with the 9 years of data with the following filename 'HCDOP_Data_README.pdf'.  This file laid out the dataset structure (2 files per year from 2003 to 2011) and a brief data dictionary, including the units for each measurement. All of the files were in the same format across the 9 years.
+
+## Questions, Comments, and Assumptions
+
+1. There were no measurements in the source csv files themselves so the units from the readme pdf were used.
+
+2. The following source parameters were treated as field sensor CTD data:
+
+     - water_pressure
+     - oxygen_concentration
+     - turbidity
+     - photosynthetically_active_radiation
+     - potential_density_sigmat
+     - water_salinity
+     - chl_concentration
+     - water_temperature
+
+     All other parameters were considered lab data
+
+3. There were no QA/QC/Validator flags in the files so there were none loaded with these data
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("UW_HCDOP")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```

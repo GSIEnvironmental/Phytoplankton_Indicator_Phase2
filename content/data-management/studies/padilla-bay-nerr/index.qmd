@@ -1,0 +1,95 @@
+---
+title: "Padilla Bay National Estuarine Research Reserve"
+provider: "Padilla Bay National Estuarine Research Reserve"
+code-fold: show
+---
+
+## Data Source
+
+- **Data Provider**: Padiila Bay National Estuarine Research Reserve (NERR)
+- **Data Files**: All CSV data files in the folder: `6983 WA Ecology Phyto Indicator for PS/Data_Inventory/_NERR/342372`, plus locations in the file `sampling_stations.csv`
+
+## Comments and Assumptions
+
+The following parameters are defined in the data source README file (`6983 WA Ecology Phyto Indicator for PS/Data_Inventory/_NERR/342372/readme.rtf`):
+
+| Parameter | Description | Units | Parameter Category |
+| --- | --- | --- | --- |
+| cdepth | depth from a non-vented sensor corrected for changes in barometric pressure | meters (m) | water quality |
+| chlfluor | chlorophyll fluorescence | micrograms per Liter (ug/L) | water quality |
+| clevel | level from a non-vented sensor corrected for changes in barometric pressure | meters (m) | water quality |
+| depth | sonde depth | meters (m) | water quality |
+| do_pct | dissolved oxygen | percent saturation (%) | water quality |
+| do_mgl | dissolved oxygen concentration | milligrams per Liter (mg/L) | water quality |
+| level | sonde depth | meters (m) | water quality |
+| turb | turbidity | nephelometric turbidity units (NTU) | water quality |
+| ph | pH | standard units | water quality |
+| spcond | specific conductivity | milli-Siemens per centimeter (mS/cm) | water quality |
+| sal | salinity | parts per thousand (ppt) | water quality |
+| temp | water temperature | degrees Celsius (C) | water quality |
+| atemp | average air temperature | degrees Celsius (C) | meteorological |
+| bp | average barometric pressure | millibars (mb) | meteorological |
+| maxwspd | max wind speed | meters per second (m/s) | meteorological |
+| rh | average relative humidity | percent saturation (%) | meteorological |
+| sdwdir | wind direction standard deviation | degrees | meteorological |
+| totpar | total photosynthetically active radiation | millimoles per square meter | meteorological |
+| totsorad | total solar radiation | watts per square meter | meteorological |
+| wspd | average wind speed | meters per second (m/s) | meteorological |
+| wdir | average wind direction | degrees true North | meteorological |
+| totprcp | total precipitation | millimeters (mm) | meteorological |
+| chla_n | chlorophyll a | micrograms per Liter (ug/L) | bottle |
+| nh4f | ammonium | milligrams per Liter (mg/L) as N | bottle |
+| no23f | nitrite + nitrate | milligrams per Liter (mg/L) as N | bottle |
+| no2f | nitrite | milligrams per Liter (mg/L) as N | bottle |
+| no3f | nitrate | milligrams per Liter (mg/L) as N | bottle |
+| po4f | orthophosphate | milligrams per Liter (mg/L) as P | bottle |
+
+- The parameter **MaxWSpdT** is not loaded to the project database as it conflicts with the *DateTimeStamp** for the measurement.
+- All meterological parameters are excluded from the project database.
+- All `NULL` or empty string (`''`) measurement values are excluded from the project database.
+
+## Naming Conventions
+
+Environmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.
+
+The Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.
+
+In order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.
+
+### Locations
+
+Location names in the source data are all converted to uppercase. Additionally, location IDs are created by prepending the location name with the string `PadillaBay_`. For example, the location name `pdbpfmet` would be converted to the location ID `PadillaBay_PDBPFMET`.
+
+### Samples
+
+Sample names follow the format `<STATION>_<DEPTH>_<DATE>`. If no depth is provided, the sample name is `<STATION>_<DATE>`. The `<DATE>` string is in the format `YYYYMMDDHH24MI`.
+
+Generally speaking, all discrete bottle samples do not have a depth associated with them. Depths are only associated with the CTD samples.
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("PadillaBay")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```

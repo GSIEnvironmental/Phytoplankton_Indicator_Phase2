@@ -1,0 +1,412 @@
+---
+title: "Salish Sea Cruises"
+provider: "University of Washington"
+code-fold: show
+---
+
+## Data Source
+
+- **Data Provider**: University of Washington
+- **Data URL**: [https://nvs.nanoos.org/CruiseSalish](https://nvs.nanoos.org/CruiseSalish)
+- **Date Extracted**: 8/1/2024 (Anything added after this has not been pulled into GSIDB, September 2023 downcast/upcast xlsx files were the most recent at this time)
+- **Number of Cruises**: 79 unique cruises from December 1998 to September 2023
+- **Original Data Location**: `\\houston-dc\Jobs\6951-6999\6983 WA Ecology Phyto Indicator for PS\Data_Inventory\_University_of_Washington\Salish_Cruises_originalData`
+
+## Pre-Processing
+
+None of the original data was modified, all data loading and pre processing was performed on a copy here: `\\houston-dc\Jobs\6951-6999\6983 WA Ecology Phyto Indicator for PS\Data_Inventory\_University_of_Washington\Salish_Cruises`
+
+There were 145 individual files to go through (65 .csv and 80 .xlsx)
+
+**Step 1** was to convert them all to csvs
+
+Upon further inspection trying to summarize all of the 145 files to gather similar columns etc.  There were typos found in the naming conventions for "Station IDs" and "Cruise IDs". In order to give each file and row of data a proper match to a location these needed to be edited.  There were also some unknown typos that Brandon and I assumed to be an improper input of the template for some rows of data in certain files, these rows were deleted to maintain the integrity of the data.  This is also documented in the "station_info_final_ZC.xlsx" sheet.
+
+**Step 2** was to fix the typos in the original data files so we could get a proper join. All changes are logged in the excel files below:
+
+1. `station_info_final_ZC`.xlsx: `\\houston-dc\Jobs\6951-6999\6983 WA Ecology Phyto Indicator for PS\Data_Inventory\_University_of_Washington\Salish_Cruises\station_info_final_ZC.xlsx` in the `all_fixes` sheet
+
+2. `cruise_info_final_ZC`.xlsx: `\\houston-dc\Jobs\6951-6999\6983 WA Ecology Phyto Indicator for PS\Data_Inventory\_University_of_Washington\Salish_Cruises\cruise_info_final_ZC.xlsx` in the `modified_cruise_info` sheet
+
+In order to process the data in an efficient manner 3 patterns were observed based on the template changes over time:
+
+1. All downcast and upcast files from 1998 to 2015
+2. Only downcast files from 2016-2023
+3. Only upcast files from 2016-2023
+
+**Step 3** was to un cross tab all of the individual csvs based on these three groupings.
+
+The uncross tabbing script `unxtab_UWSalishData_ZC.py` must be run FIRST before running any .sql scripts in order to prepare the data in long format.  The script generates .cfg files for each individual upcast and downcast file and tweaks the template based on which of the 3 groups the file is in.  It simotaneously uses a powerful python package called `subprocess` in order to utilize the posit server and unxtabs all the files within a few minutes.  DO NOT try to run on local machine it will take close to an hour. Everything performed here is meant to be SSH to the posit machine. Located in the upsert folder is also a copy of ZC's `unxtab_UWSalishData_ZC_requirements.txt` but the packages needed to install are being imported at the top of the script and should be on the posit machine already.
+
+**Step 4** was to create a master column name sheet `col_name_metadata.csv` file to properly categorize the data into lab or field sensor/ctd measurements.
+
+This file was created from a summary sheet `all_salish_data_w_cruiseInfo_assumptionCruiseInfo_2_BS.xlsx` ZC created at the very beginning trying to understand all 145 files. BS then went through all of the column names to properly categorize the data. located on the server here: `\\houston-dc\Jobs\6951-6999\6983 WA Ecology Phyto Indicator for PS\Data_Inventory\_University_of_Washington\Salish_Cruises_originalData\_summarySheets\all_salish_data_w_cruiseInfo_assumptionCruiseInfo_2_BS.xlsx`
+
+## Comments and Assumptions
+
+The following column names from the original data were treated as CTD/sensor field measurements:
+
+- Beam Attenuation
+- Beam Transmission
+- c0S/m: Conductivity
+- c1S/m: Conductivity  2
+- Chlorophyll Fluorescence
+- CStarAt0: Beam Attenuation  WET Labs C-Star
+- CStarTr0: Beam Transmission  WET Labs C-Star
+- CTD FLU (mg/m3)
+- CTD_PH_NBS
+- CTDOXY_MG_L_1
+- CTDOXY_MG_L_2
+- CTDOXY_MG_L_AVG
+- CTDPRS_DBAR
+- CTDSAL_PSS78
+- CTDSAL2_PSS78
+- CTDTMP_DEG_C_ITS90
+- CTDTMP2_DEC_C_ITS90
+- density00: Density
+- density11: Density  2
+- depSM: Depth
+- Depth
+- DEPTH (M)
+- flECO-AFL: Fluorescence  WET Labs ECO-AFL/FL
+- oxsolMg/L: Oxygen Saturation  Garcia & Gordon
+- Oxygen Concentration MG
+- Oxygen Concentration MG_duplicated_0
+- Oxygen Concentration MOL
+- Oxygen Saturation
+- PAR
+- pH
+- ph: pH
+- potemp090C: Potential Temperature
+- potemp190C: Potential Temperature  2
+- Potential Temperature
+- prDM: Pressure  Digiquartz
+- prdM: Pressure  Strain Gauge
+- prDM: Pressure Digiquartz
+- Pressure
+- sal00: Salinity  Practical
+- sal11: Salinity  Practical  2
+- Salinity
+- sbeox0Mg/L: Oxygen  SBE 43
+- sbeox0ML/L: Oxygen  SBE 43
+- sbeox0Mm/Kg: Oxygen  SBE 43
+- sbeox0PS: Oxygen  SBE 43
+- sbeox0V: Oxygen raw  SBE 43
+- sbeox1Mg/L: Oxygen  SBE 43  2
+- sbeox1ML/L: Oxygen  SBE 43  2
+- sbeox1PS: Oxygen  SBE 43  2
+- sbeox1V: Oxygen raw  SBE 43  2
+- sbox0Mm/Kg: Oxygen  SBE 43
+- sbox1Mm/Kg: Oxygen  SBE 43  2
+- sigma-Ã00: Density
+- sigma-Ã11: Density  2
+- sigma-Ã©00: Density
+- Sigma-t
+- sigma-t00: Density
+- sigma-t11: Density  2
+- Sigma-theta
+- SIGMATHETA_KG_M3
+- SIGMATHETA2_KG_M3
+- t090C: Temperature
+- t190C: Temperature  2
+- Temperature
+- Temperature  2
+- Temperature 2
+- Turbidity
+- turbWETntu0: Turbidity  WET Labs ECO
+
+The remainder of the column names were treated as Lab measurements.
+
+## Naming Conventions
+
+Environmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.
+
+The Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast, and a Depth or Pressure measurement.
+
+In order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.
+
+### Samples
+
+These conventions have been adopted to ensure that each sample is uniquely identified.
+
+Sample names are constructed using the following convention:
+
+- Upcast Measurements: `<CruiseID>_<StationID>_<up/downcast>_<YYYYMMDDHH24MISS>_<depth>_<depth_unit>` _Depth was not always available so pressure was substituted for those cases_
+- Downcast Measurements: `<CruiseID>_<StationID>_<up/downcast>_<YYYYMMDDHH24MI>_<depth>_<depth_unit>` _Depth was not always available so pressure was substituted for those cases_
+
+## Proper Script Run Order
+
+In order for the data to be handled correctly these are the steps the scripts were run in _(assuming the data is already cleaned)_:
+
+1. `[unxtab_UWSalishData_ZC.py](./unxtab_UWSalishData_ZC.py)` _ZC data pre processing SEE header for specific information on how script works_
+2. `load_uw_salish_cruises.sql` _CG created this script to load the location data first from the `station_info_final_ZC.csv` file (only updates the d_location and d_studylocation tables)_
+3. `load_uw_salish_data.sql` _ZC data loading_
+
+    - This script the following 3 .txt files in order to pull in the filepaths for the three groups of source data, all located in the main upsert folder:
+        - `0_csv_filepaths.txt`
+        - `0_xlsx_down_filepaths.txt`
+        - `0_xlsx_up_filepaths.txt`
+    - These three files ZC created using `src_data_filepath_list_generation.ipynb` in the upsert directory
+
+Below is code from the [unxtab_UWSalishData_ZC.py](./unxtab_UWSalishData_ZC.py) script:
+
+```{.python filename="unxtab_UWSalishData_ZC.py"}
+{{< include unxtab_UWSalishData_ZC.py >}}
+```
+
+## Script Review
+
+This section documents the internal review for the `20240506b_load_UW_SalishCruises` scripts. Each subheading in this section corresponds to a single script or file in this repository. Contents of each subheading include the review process, comments, and feedback for the corresponding script or file.
+
+- **Reviewer:** Caleb Grant
+- **Review Date:** 2024-08-13
+
+### unxtab_UWSalishData_ZC.py
+
+1. Please include a requirements.txt file with the required packages for this script.
+2. Please move all important script comments into the script header. It is unclear why the script handles folders >= 2016 differently than folders < 2016 until the the user get's halfway through the script.
+3. It would be helpful if this script generated a logfile instead of printing to the console. There are no records that this script was run. No need to change this now, but it would be helpful in the future.
+
+Overall this script looks good. Well documented and easy to follow. There are quite a few intermediary files that are created. It would be helpful to document these in the README or in the script header.
+
+One thing that could further improve readability is to use a Python linter and formatter. This will help with consistent formatting and catch any syntax issues. The package [ruff](https://github.com/astral-sh/ruff) is a good choice for this. You can install it with `pip`, lint with the command `ruff check unxtab_UWSalishData_ZC.py` and format with the command `ruff format unxtab_UWSalishData_ZC.py`.
+
+### load_uw_salish_cruises.sql
+
+We will want to note that this script was originally written to load a different data set, and expects data to already be in the database. I don't remember the exact file that was used previously.
+
+### load_uw_salish_data.sql
+
+1. Do the header notes identify the script’s purpose, author, and revision history?
+   - Yes
+
+2. Is the code formatted for readability?
+   - Yes looks good. A couple of improvements could be made, specifically to `case` statements or string concatenations to help with readability, but overall the script is easy to follow.
+
+    One example; the declaration of the `sample_id` column in `!!staging!!.cleaned_raw_data` could be modified from this:
+
+   ```sql
+    cruise_id ||'_'||
+    station ||'_'||
+    cast_type ||'_'||
+    case
+        when cast_type = 'upcast' then to_char(utc_timestamp at time zone 'utc' at time zone 'pst', 'YYYYMMDDHH24MISS')
+        when cast_type = 'downcast' then to_char(utc_timestamp at time zone 'utc' at time zone 'pst', 'YYYYMMDDHH24MI')
+        else null
+    end
+    ||'_'||
+    round(coalesce(depth,pressure)::numeric, 3)
+    ||'_'||
+    case
+        when depth is not null then 'm'
+        when depth is null then 'dbar'
+        else null
+    end
+    as sample_id,
+   ```
+
+    to this:
+
+   ```sql
+    cruise_id
+        || '_'
+        || station
+        || '_'
+        || cast_type
+        || '_'
+        || CASE
+                WHEN cast_type = 'upcast' THEN
+                    TO_CHAR(utc_timestamp AT TIME ZONE 'utc' AT TIME ZONE 'pst', 'YYYYMMDDHH24MISS')
+                WHEN cast_type = 'downcast' THEN
+                    TO_CHAR(utc_timestamp AT TIME ZONE 'utc' AT TIME ZONE 'pst', 'YYYYMMDDHH24MI')
+                ELSE NULL
+                END
+        || '_'
+        || ROUND(
+                COALESCE(depth, pressure)::numeric,
+                3
+            )
+        || '_'
+        || CASE
+                WHEN depth IS NOT NULL THEN 'm'
+                WHEN depth IS NULL THEN 'dbar'
+                ELSE NULL
+                END
+        AS sample_id
+   ```
+
+3. Do comments accurately describe the purpose of functional blocks within the script?
+
+   - Yes
+
+4. Are nullable columns used in joins without accounting for the possibility of nulls?
+
+    - No
+
+5. Are nullable columns used in WHERE clause conditions without accounting for the possibility of nulls?
+
+   - In the `!!staging!!.cleaned_raw_data` definition, there is a left join on `!!staging!!.col_name_metadata` that could potentially return null values (because it is a left join). The column `GSIDB_load` is then used in the `WHERE` clause without accounting for the possibility of nulls. This could potentially exclude rows from the final data set that should be included. Either the join should be an inner join or the `WHERE` clause should be modified to account for null values (i.e., `WHERE GSIDB_load is true OR GSIDB_load IS NULL`).
+
+6. Are all appropriate columns used in each join expression?
+
+   - Yes
+
+7. Do any inner joins result in the erroneous exclusion of rows because one table has non-matching rows?
+
+    - No inner joins are used in the script.
+
+8. Do any joins result in unintended expansion of rows (e.g., because there is a many-to-many relationship between the tables when the relationship should be one-to-one or one-to-many)?
+
+9. Are values in imported data sets tested for completeness, consistency, and uniqueness, as appropriate?
+
+    - No, but there are preprocessing steps which have been performed on the data prior to this script being run.
+
+10. Are there undocumented or implicit assumptions about data or relationships in the code?
+
+    - There are quite a few assumptions made about the data in the script(s), which is not necessarily a fault of this script but rather the data that is being loaded. It would be helpful to document these assumptions in the script header or in the README.
+
+11. Are any hard-coded values correct for the database in use (e.g., analyte codes originally to be used with a different database carried over to the current database)?
+
+    - No
+
+12. Is the logic of AND and OR clauses in WHERE clauses correct?
+
+    - None are used in the script.
+
+13. Is the logic or algebra of calculations correct?
+
+    - No calculations are performed in the script.
+
+14. Are function arguments correct?
+
+    - Yes
+
+15. Are there any equality comparisons between floating-point numbers when they are not drawn unmodified from the same table column?
+
+    - No
+
+16. Are constant values defined as substitution variables in a configuration section at the head of the script or in a configuration file?
+
+    - Yes
+
+17. Are library scripts used where appropriate?
+
+    - Yes
+
+18. Are transactions used where appropriate, and can committing of transactions be easily enabled or disabled?
+
+    - Yes
+
+19. Is code repetition minimized?
+
+    - Yes
+
+20. Does the code provide information about progress and status as it runs?
+
+    - Yes
+
+21. Are any important actions missing?
+
+    - No
+
+#### Comments
+
+- Please modify the `README.qmd` file to document inmportant information about the scripts in this repository, their purpose, how to use them, and which order to run them in (i.e., does `load_uw_salish_cruises.sql` need to be run before `load_uw_salish_data.sql`? What about the Python script?).
+- Where did the file `0_csv_filepaths.txt` come from? Document this in the README.
+- Where did the file `0_xlsx_down_filepaths.txt` come from? Document this in the README.
+- Where did the file `0_xlsx_up_filepaths.txt` come from? Document this in the README.
+- Where did the file `col_name_metadata.csv` come from? Document this in the README.
+- To determine which factor to use for the unit `umol/kg`, we first need to determine what the base unit is for units that share the same dimension (`#/M`). The base unit will always have a factor of 1. If there are no other units that share the dimension `#/M` then the factor would be 1. Since there is another unit defined with the dimension `#/M` (`umol/g`), then we need to determine the conversion factor between `umol/kg` and `umol/g`.
+
+    We use the following formula to convert units to the base unit:
+
+    $$
+    (\text{value} + \text{addend1}) * \text{factor} + \text{addend2} = \text{value in base unit}
+    $$
+
+  - **Addend1**: This is something you’d add to the “value” before multiplying. In a simple conversion like this, we often don’t need to adjust the original value, so Addend1 is 0.
+  - **Factor**: This is the conversion factor between µmol/kg and µmol/g.
+  - **Addend2**: This is something you’d add after multiplying. Again, in this case, no extra adjustment is needed, so Addend2 is 0.
+
+    We can use algebra to solve for the conversion factor.
+
+    $$
+    (1 \frac{\text{umol}}{\text{kg}} + 0) * \text{factor} + 0 = \text{value in } \frac{\text{umol}}{\text{g}}
+    $$
+
+    Simplified to:
+
+    $$
+    1 \frac{\text{umol}}{\text{kg}}  * \text{factor} = \text{value in } \frac{\text{umol}}{\text{g}}
+    $$
+
+    We know that 1kg = 1000g:
+
+    $$
+    1 \frac{\text{umol}}{\text{kg}} = \frac{1\text{umol}}{1000\text{g}} = 0.001 \frac{\text{umol}}{\text{g}}
+    $$
+
+    So we can substitute this in:
+
+    $$
+    1 \frac{\text{umol}}{\text{kg}}  * \text{factor} = 0.001 \frac{\text{umol}}{\text{g}}
+    $$
+
+    And solve for the factor:
+
+    $$
+    1 * \text{factor} = 0.001
+    $$
+
+    $$
+    \text{factor} = 0.001
+    $$
+
+    Therefore, the factor for `umol/kg` is 0.001.
+
+- Please commit your translations to the `x_` tables. You can set the `load_translations` and `do_commit` flags to `Yes` in the `custom.conf`. You also might want to add a line inside the load lookups/load translations code sections that pause the script and ask if you want to continue after the upsert process is complete. See below for an example:
+
+    ```sql
+    -- !x! if(!!load_translations!!)
+        -- !x! include ..!!$pathsep!!_translations!!$pathsep!!load_translations.sql
+        -- !x! pause "Do you want to continue with the loading script?" continue after 120 seconds
+    -- !x! endif
+    ```
+
+- There seem to be some unresolved comments in the script (i.e., `-- ASK BRANDON/CALEB`). These should be resolved before the script is finished.
+- A second condition should be added to the import section `-- !x! if(!!reload_data!!)` that checks to see if the source data tables exist. The script will crash if another user runs the script and has the `reload_data` variable set to `No`. The script should check if the table `!!staging!!.combined_raw_data` exists, since that is ultimately what the import section is trying to create.
+- The cleaning and standardization procedures should be performed every time the script is run because all subsequent code relies on the cleaned data/table. It is currently wrapped in a conditional statement that will only run if the user has the `re_clean_data` variable set to `Yes`. The script will crash if another user runs the script and has the `re_clean_data` variable set to `No`.
+- PostgreSQL interprets all identifiers as lowercase unless they are quoted. It is best practice to use lowercase identifiers and quote them when necessary. This will help with consistency and readability. As an example, the column `GSIDB_load` should be quoted as `"GSIDB_load"` in the script if you want to keep the capitalization, otherwise it should be changed to lowercase.
+- You might consider adding all of the substitution variables defined at the top of the script into columns of your `!!staging!!.cleaned_raw_data` table that is used to _INSERT_ data into the GSIDB staging tables. This will allow you to see what these columns look like inside your cleaned intermmediate data table (`!!staging!!.cleaned_raw_data`) before you insert them into the GSIDB staging tables and it could help you debug any issues that arise when **everything** is staged in a single table before splitting it out into the GSIDB staging tables. It ultimately doesnt matter which way you do it, but having the substitution variables in the `!!staging!!.cleaned_raw_data` table will allow you to see what the data looks like before it is inserted into the GSIDB staging tables.
+- The following tables should have a `WHERE` clause that **excludes** CTD data. These tables are used for laboratory samples and results.
+  - d_sampsplit
+  - d_labsample
+  - d_labresult
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("UW_Salish")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```

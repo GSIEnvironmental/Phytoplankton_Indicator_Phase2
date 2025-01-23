@@ -1,0 +1,61 @@
+---
+title: "Ocean Research College Academy"
+provider: "Ocean Research College Academy"
+code-fold: show
+---
+
+## Data Source
+
+- **Data Provider**: Ocean Research College Academy
+- **Data Files**:
+  - `MARINA_10.22.21 to 3.12.24_for PB.csv`
+  - `MBT_11.22.22 to 2.27.24_for PB.csv`
+
+## Comments and Assumptions
+
+- Records where `pass` is `False`, indicating the sensor did not pass calibration, are flagged as `Rejected` in the database.
+- Salinity units are reported as `ppt`. It is unclear if this translates to `parts per trillion` or `parts per thousand`. Currently, the units are assumed to be `parts per trillion`, and are therefore translated to a less ambiguous unit of `ng/L`.
+
+## Naming Conventions
+
+Environmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.
+
+The Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.
+
+In order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.
+
+### Locations
+
+Location names are created from the first part of the source file name. For example, the location name for the file `MARINA_10.22.21 to 3.12.24_for PB.csv` would be `MARINA`.
+
+### Samples
+
+Sample names follow the format `<STATION>_<DEPTH>_<DATE>`. The `<DATE>` string is in the format `YYYYMMDDHH24MISS`. For example, a sample taken at station `MARINA`, at a depth of `5m`, on `2022-10-22 12:01:00` would be named `MARINA_5.0_20221022120100`.
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("ORCA")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```

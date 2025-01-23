@@ -1,0 +1,40 @@
+---
+title: "About"
+---
+
+## Purpose
+
+This project is the second phase (Phase 2) of a three-phase process to work with the scientific and monitoring community to develop a phytoplankton-based Vital Sign (VS) indicator for Puget Sound. Phase 1, funded by the Puget Sound Partnership Monitoring to Accelerate Recovery award in 2021-2023, under IAA 2022-62 laid the foundation for developing a phytoplankton and primary productivity related VS. The purpose of Phase 2 is to conduct analyses in support of developing a phytoplankton-based Vital Sign indicator. We will analyze the inventory of Puget Sound data established as part of Phase 1. The analysis will identify spatial and temporal patterns and trends in phytoplankton community metrics, reveal data gaps, and explore opportunities for application of emergent data collection methods. Summary statistics will be calculated and visualized. Preliminary analyses will inform decisions regarding optimal formats for organization and compilation of the phytoplankton-based monitoring data. The project will produce a final technical report which will provide an overview of recommendations for the indicator, next steps for indicator development, recommendations for parties responsible for indicator reporting, frequency of indicator updates, resources necessary to support the indicator, and suggestions for additional monitoring beyond currently available data.  Ultimately, this project will provide the statistical analyses and technical guidance for Phase 3 and the future development of a finalized indicator status and trends reporting plan and QAPP for a phytoplankton-based Vital Sign in Puget Sound.
+
+## Goals
+
+1. Compile the phytoplankton-related data identified in Phase 1 of the Phytoplankton Vital Sign project into a Phytoplankton Data Inventory, which summarizes types of data collected by Puget Sound phytoplankton monitoring programs.
+2. Assemble a summary of methods used across these programs for collecting phytoplankton-related data in Puget Sound.
+3. Incorporate relevant sources of data from the Phytoplankton Data Inventory into a Phytoplankton Monitoring Database.
+4. Conduct statistical analyses of the Phytoplankton Monitoring Database data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify data gaps.
+5. Explore and summarize opportunities for application of emergent data collection methods that may be used to supplement existing phytoplankton monitoring programs in Puget Sound.
+6. Provide recommendations and guidance for Vital Sign metrics and/or indicators to be used to develop an indicator status and trends reporting plan and Quality Assurance Project Plan (QAPP) (Phase 3), curated in the form of a final technical report.
+
+## Funding
+
+## Team
+
+::: {.grid}
+
+::::: {.g-col-12 .g-col-med-6 .g-col-lg-3}
+[![](/static/logos/gsi-environmental.svg)](https://www.gsienv.com/)
+:::::
+
+::::: {.g-col-12 .g-col-med-6 .g-col-lg-3}
+[![](/static/logos/puget-sound-partnership.png)](https://www.psp.wa.gov/)
+:::::
+
+::::: {.g-col-12 .g-col-med-6 .g-col-lg-3}
+[![](/static/logos/university-of-washington.png)](https://www.washington.edu/)
+:::::
+
+::::: {.g-col-12 .g-col-med-6 .g-col-lg-3}
+[![](/static/logos/wa-ecology.svg)](https://ecology.wa.gov/water-shorelines/shoreline-coastal-management/padilla-bay-reserve)
+:::::
+
+:::

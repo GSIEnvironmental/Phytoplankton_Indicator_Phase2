@@ -1,0 +1,82 @@
+---
+title: "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data"
+provider: "Stillaguamish Tribe of Indians"
+code-fold: show
+---
+
+## Data Sources
+
+- **Data Provider**: Stillaguamish Tribe of Indians
+- **Data Files**:
+  - `Port Susan Prelim WQ Data 2011-2024 PSEMP PHYTO DB.xlsx` (Mooring)
+  - `PSP1_Prelim_Profile_Data_Running PSEMP PHYTO DB.xlsx` (Profile)
+  - `PSP5_PrelimData_Running for PhytoDB.csv` (Profile)
+  - `Port Susan Non-Kayak Pt Phytoplankton Observation Summaries.xlsx` (Phytoplankton)
+
+## Comments and Assumptions
+
+### Port Susan Non-Kayak Pt Phytoplankton Observation Summaries.xlsx
+
+No outstanding questions or comments.
+
+### Port Susan Prelim WQ Data 2011-2024 PSEMP PHYTO DB.xlsx
+
+- Chlorophyll records with a value of `999.99` are excluded from the data loading process. The **meta** tab of this file indicates that these records indicate a reading outside the range of the instrument.
+- The following parameters have been excluded from the data loading process:
+  - `Wiper Position volt`
+  - `Vertical Position m`
+  - `Cable Pwr V`
+  - `Battery V`
+- Coordinates provided in the **meta** tab of this file indicate the mooring location is identical to the location provided in the **meta** tab of the `PSP1_Prelim_Profile_Data_Running PSEMP PHYTO DB.xlsx` file. The location `PSP1` is being used for the location ID in the database, with a **loc_type** value of `Mooring`.
+
+### PSP5_PrelimData_Running for PhytoDB.csv
+
+No outstanding questions or comments.
+
+### PSP1_Prelim_Profile_Data_Running PSEMP PHYTO DB.xlsx
+
+No outstanding questions or comments.
+
+## Naming Conventions
+
+Environmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.
+
+The Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.
+
+In order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.
+
+### Locations
+
+Location IDs are created by prepending the location name with the string `Stillaguamish_`. For example, the location name `PSP1` would be converted to the location ID `Stillaguamish_PSP1`.
+
+### Samples
+
+Sample names follow the format `<STATION>_<DEPTH>_<DATE>`. If no depth is provided, the sample name is `<STATION>_<DATE>`. The `<DATE>` string is in the format `YYYYMMDDHH24MI`.
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("StillaguamishTribe")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```
