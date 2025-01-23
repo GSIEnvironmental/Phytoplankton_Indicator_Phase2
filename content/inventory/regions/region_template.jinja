@@ -64,8 +64,6 @@ tagList(
 ## {{ group.0 }}-{{ group.1 }}
 
 ### Data By Provider
-Table with a summary by data provider (dropdown select for the provider)
-
 ```{r}
 
 sql <- "
@@ -110,7 +108,7 @@ if(nrow(data) == 0) {
 ```{r}
 
 sql <- "
-select distinct
+select
     location_id, 
     loc_desc as description,
     st_x(st_transform(loc_geom, 4326)) as lon, 
@@ -157,9 +155,6 @@ if(nrow(data) == 0) {
 ```
 
 ### Timeseries
-
-X = month/year, Y = number of samples by month
-
 ```{r}
 
 sql <- "
