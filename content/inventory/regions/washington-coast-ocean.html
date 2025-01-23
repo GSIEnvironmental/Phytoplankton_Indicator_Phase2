@@ -413,7 +413,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="tabset-5-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-5-1-tab">
 <section id="data-by-provider" class="level3">
 <h3 class="anchored" data-anchor-id="data-by-provider">Data By Provider</h3>
-<p>Table with a summary by data provider (dropdown select for the provider)</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -461,7 +460,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>sql <span class="ot">&lt;-</span> <span class="st">"</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="st">select distinct</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="st">select</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="st">    location_id, </span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="st">    loc_desc as description,</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="st">    st_x(st_transform(loc_geom, 4326)) as lon, </span></span>
@@ -513,7 +512,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="timeseries" class="level3">
 <h3 class="anchored" data-anchor-id="timeseries">Timeseries</h3>
-<p>X = month/year, Y = number of samples by month</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -721,7 +719,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="tabset-5-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-2-tab">
 <section id="data-by-provider-1" class="level3">
 <h3 class="anchored" data-anchor-id="data-by-provider-1">Data By Provider</h3>
-<p>Table with a summary by data provider (dropdown select for the provider)</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -769,7 +766,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>sql <span class="ot">&lt;-</span> <span class="st">"</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="st">select distinct</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="st">select</span></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="st">    location_id, </span></span>
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="st">    loc_desc as description,</span></span>
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="st">    st_x(st_transform(loc_geom, 4326)) as lon, </span></span>
@@ -821,7 +818,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="timeseries-1" class="level3">
 <h3 class="anchored" data-anchor-id="timeseries-1">Timeseries</h3>
-<p>X = month/year, Y = number of samples by month</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1029,7 +1025,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="tabset-5-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-3-tab">
 <section id="data-by-provider-2" class="level3">
 <h3 class="anchored" data-anchor-id="data-by-provider-2">Data By Provider</h3>
-<p>Table with a summary by data provider (dropdown select for the provider)</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1077,7 +1072,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>sql <span class="ot">&lt;-</span> <span class="st">"</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="st">select distinct</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="st">select</span></span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="st">    location_id, </span></span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="st">    loc_desc as description,</span></span>
 <span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="st">    st_x(st_transform(loc_geom, 4326)) as lon, </span></span>
@@ -1129,7 +1124,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="timeseries-2" class="level3">
 <h3 class="anchored" data-anchor-id="timeseries-2">Timeseries</h3>
-<p>X = month/year, Y = number of samples by month</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1337,7 +1331,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="tabset-5-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-4-tab">
 <section id="data-by-provider-3" class="level3">
 <h3 class="anchored" data-anchor-id="data-by-provider-3">Data By Provider</h3>
-<p>Table with a summary by data provider (dropdown select for the provider)</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1385,7 +1378,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>sql <span class="ot">&lt;-</span> <span class="st">"</span></span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="st">select distinct</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="st">select</span></span>
 <span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="st">    location_id, </span></span>
 <span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="st">    loc_desc as description,</span></span>
 <span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="st">    st_x(st_transform(loc_geom, 4326)) as lon, </span></span>
@@ -1437,7 +1430,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="timeseries-3" class="level3">
 <h3 class="anchored" data-anchor-id="timeseries-3">Timeseries</h3>
-<p>X = month/year, Y = number of samples by month</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
