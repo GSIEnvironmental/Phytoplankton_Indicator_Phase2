@@ -1,0 +1,26 @@
+---
+title: Data Handling & QA/QC
+description: Phytoplankton Monitoring Data Handling & QA/QC
+listing:
+  id: study-listing
+  type: table
+  fields: [provider, title]
+  field-display-names:
+    provider: Provider
+    title: "Study Name"
+  sort-ui: false
+  contents:
+    - "./*/index.qmd"
+---
+
+Data handling and QA/QC procedures are described in the pages listed below. Each page includes:
+
+- An overview of the study and links to the original data source (if available).
+- A description of the data sources provided.
+- Any preprocessing steps taken to prepare the data for loading into the project database.
+- Comments and assumptions about the data.
+- Naming conventions used in the database.
+- Any code translations applied to the data.
+
+:::{.study-listing}
+:::

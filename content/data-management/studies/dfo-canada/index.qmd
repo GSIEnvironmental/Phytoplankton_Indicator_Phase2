@@ -1,0 +1,69 @@
+---
+title: "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019"
+provider: "Department of Fisheries and Oceans Canada"
+code-fold: show
+---
+
+## Data Source
+
+- **Data Provider**: Department of Fisheries and Oceans Canada
+- **Document title**: Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019
+- **Document URL**: [https://www.sciencedirect.com/science/article/pii/S0079661123001519?via%3Dihub#t0025](https://www.sciencedirect.com/science/article/pii/S0079661123001519?via%3Dihub#t0025)
+- **Supplemental data**: [1-s2.0-S0079661123001519-mmc2.xlsx](https://ars.els-cdn.com/content/image/1-s2.0-S0079661123001519-mmc2.xlsx)
+
+## Comments and Assumptions
+
+1. Sample stations are collocated with varying coordinates. An average of the latitude and longitude values is used per station to determine an authoritative location. Collected station coordinates are also retained as a sample collection attribute.
+2. The following parameters are classified as field sensor measurements:
+    - Pressure
+    - Temperature
+    - Salinity
+    - Mixed Layer Depth (mld_bvfnosmooth)
+    - Buoyancy Frequency (bvf_nosmooth)
+    - Chlorophyll
+
+     All other measurements are considered lab measurements.
+
+3. Field measurements are assumed to be collected during downcasts and discrete samples are assumed to be collected during upcasts.
+4. The "Dominant species" parameter is not loaded into the database.
+5. UTC timestamps are converted to PST.
+
+## Naming Conventions
+
+Environmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.
+
+The Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.
+
+In order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.
+
+### Samples
+
+Sample names are constructed using the following convention: `<cruise>_<station>_<samplenum>_<upcast/downcast>_YYYYMMDDHH24MI`. This convention is used to ensure that each sample is uniquely identified.
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("DFO_Canada")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```

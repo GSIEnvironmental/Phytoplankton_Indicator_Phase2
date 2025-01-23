@@ -1,0 +1,69 @@
+---
+title: "Friday Harbor Labs Pelagic Ecosystem Function"
+provider: "University of Washington"
+code-fold: show
+---
+
+## Data Sources
+
+- **Data Provider**: Friday Harbor Labs Pelagic Ecosystem Function (FHLPEF)
+- **Document title**: University of Washington Friday Harbor Labs Pelagic Ecosystem Function (FHLPEF)
+- **Document URL**: [https://www.nanoos.org/products/san_juan_pef/home.php](https://www.nanoos.org/products/san_juan_pef/home.php)
+
+## Questions, Comments, and Assumptions
+
+Units were only provided for the Phyto data, for Bottle and CTD data units were matched to parameters through the dataset inventory found on the server here: `\\houston-dc\Jobs\6951-6999\6983 WA Ecology Phyto Indicator for PS\Data_Inventory\_University_of_Washington\FHL_PEF_Data\_superseded\SanJuansPEF_dataset_2019_11_18\SanJuansPEF_dataset_Inventory.xls`
+
+The following were treated as field sensor CTD data:
+
+- density
+- pressure
+- corr_fluorescence
+- o2
+- temperature
+- corr_o2
+- descent
+- conductivity
+- salinity
+- fluorescence
+
+The following were treated as lab bottle data:
+
+- phaeo
+- sio4
+- no2
+- nh4
+- o2
+- no3
+- po4
+- chl
+
+All other parameters were considered Phytoplankton data.
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("UW_FHL_PEF")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```

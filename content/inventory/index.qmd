@@ -6,27 +6,48 @@ echo: false
 
 ## Overview
 
-The **Phytoplankton Data Inventory** is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.
+The **Phytoplankton Data Inventory** is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations:
+
+- King County
+- Washington State Department of Ecology
+- Padilla Bay National Estuarine Research Reserve
+- University of Washington
+- Kwaiht
+- NOAA Northwest Fisheries Science Center
+- Northwest Indian College
+- Ocean Research Academy
+- Pacific Shellfish Institute
+- Seattle Aquarium
+- Stillaguamish Tribe of Indians
+- Washington State Department of Health Biotoxin Program
+- Washington Sea Grant
+- Western Washington University
+- Department of Fisheries and Oceans Canada.
 
 ## Studies
 
+The following studies are included in the Phytoplankton Data Inventory:
+
 ```{python}
 import os
-
+from itables import init_notebook_mode, show
 import polars as pl
 
-# Example comment
+init_notebook_mode(all_interactive=True)
+
 uri = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DATABASE")}'
 
 df = pl.read_database_uri(
-    "select study_id, full_name, contact from d_study order by study_id",
+    """select full_name as "Study Name", contact as "Provider" from d_study order by contact, full_name""",
     uri,
-    engine="connectorx"
+    engine="connectorx",
 )
-df
+show(df, classes="display compact stripe")
 ```
 
 ## Sampling Locations
+
+Below is a summary of all sampling locations included in the project database. Locations are grouped by region. Click or hover on a point to see more information about a location or toggle individual regions on and off using the legend.
 
 ```{python}
 import os

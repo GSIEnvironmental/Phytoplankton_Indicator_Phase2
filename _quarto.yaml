@@ -57,6 +57,9 @@ website:
         href: content/data-management/index.qmd
       - text: "Analysis"
         href: content/analysis/index.qmd
+    right:
+      - text: "About"
+        href: about.qmd
     tools:
       - icon: github
         href: https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2
@@ -70,9 +73,6 @@ website:
       contents:
         - content/inventory/index.qmd
         - auto: "content/inventory/*"
-        # - section: "Datasets"
-        #   contents:
-        #     - auto: "content/inventory/datasets/*"
         - section: "Regions"
           contents:
             - auto: "content/inventory/regions/*"
@@ -84,12 +84,16 @@ website:
         - content/analysis/index.qmd
         - auto: "content/analysis/*"
     - id: data-management
-      collapse-level: 1
+      collapse-level: 2
       align: left
       style: "floating"
       contents:
         - content/data-management/index.qmd
         - auto: "content/data-management/*"
+        - section: "Data Handling & QA/QC"
+          href: "content/data-management/studies/index.qmd"
+          contents:
+            - auto: "content/data-management/studies/*/index.qmd"
 
 format:
   live-html:

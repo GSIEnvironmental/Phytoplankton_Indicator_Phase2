@@ -1,0 +1,466 @@
+---
+title: Data Export
+description: Exporting data from the project database to Parquet
+---
+
+This page includes Python code used to export data from the project database to Parquet datasets. There are four datasets: bottle, mooring, ctd, and species abundance. Each dataset is exported to a separate directory inside a `data` folder. Within each dataset folder, parquet files are partitioned by provider and year.
+
+:::{.callout-important}
+This code references materialized views in the project database. SQL code used to create the materialized views is included in the `scripts` folder at the root of this repository.
+:::
+
+## Python Setup
+
+1. Install Python version 3.10, 3.11, or 3.12.
+2. Install required dependencies: `python -m pip install numexpr psycopg2-binary pyarrow python-dotenv tqdm polars`
+3. Create a `.env` file in the same directory as this notebook with the following keys:
+
+    ```ini
+    PG_HOST=
+    PG_DATABASE=
+    PG_USER=
+    PG_PASSWORD=
+    ```
+
+## Export Code
+
+```python
+#!/usr/bin/env python
+
+# Standard libraries
+import argparse
+import logging
+import os
+import shutil
+import tarfile
+from datetime import datetime
+from pathlib import Path
+
+# Third party libraries
+import numexpr as ne
+import psycopg2
+import pyarrow as pa
+import pyarrow.parquet as pq
+from dotenv import load_dotenv
+from psycopg2.extras import RealDictCursor
+from tqdm import tqdm
+
+load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(message)s", datefmt="[%Y-%m-%d %H:%M:%S]"
+)
+logger = logging.getLogger(__name__)
+
+# Sets the maximum number of threads that numexpr can use (pyarrow uses numexpr)
+# to 80% of the number of cores on the machine.
+ne.numexpr_max_threads = int(ne.detect_number_of_cores() * 0.8)
+
+# Number of rows to process at a time.
+BATCH_SIZE = 50_000
+
+# Column names to partition data by.
+# The partitioned dataset will be organized into
+# folders based on values of the partitioning column.
+#
+#   ./output
+#   ├── provider=King County
+#   ├── ...
+#   └── provider=Washington Department of Ecology
+PARTITION_COLS = ["provider_key", "year"]
+
+# Directory to store the parquet datasets in.
+# Each SQL file in the SQL_DIR will contain its own
+# dataset within the OUTDIR folder.
+OUTDIR = Path("data")
+if OUTDIR.exists() and OUTDIR.is_dir():
+    shutil.rmtree(OUTDIR)
+OUTDIR.mkdir(parents=True, exist_ok=True)
+
+GZ_TARFILE = Path(OUTDIR.name + ".tar.gz")
+if GZ_TARFILE.exists():
+    GZ_TARFILE.unlink()
+
+# PostgreSQL connection details
+if "PG_HOST" not in os.environ:
+    raise ValueError("Environment variable PG_HOST is not set")
+PG_HOST = os.getenv("PG_HOST")
+if "PG_DATABASE" not in os.environ:
+    raise ValueError("Environment variable PG_DATABASE is not set")
+PG_DATABASE = os.getenv("PG_DATABASE")
+if "PG_USER" not in os.environ:
+    raise ValueError("Environment variable PG_USER is not set")
+PG_USER = os.getenv("PG_USER")
+if "PG_PASSWORD" not in os.environ:
+    raise ValueError("Environment variable PG_PASSWORD is not set")
+PG_PASSWORD = os.getenv("PG_PASSWORD")
+
+
+def clparser():
+    parser = argparse.ArgumentParser(
+        description="Export data from PostgreSQL to Parquet files"
+    )
+    parser.add_argument(
+        "dataset",
+        type=str,
+        choices=["bottle", "mooring", "ctd", "all"],
+        help="Dataset to export",
+    )
+    return parser
+
+
+def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
+    dataset_dir = OUTDIR / dataset_name
+    logger.info(f"Processing data for {dataset_dir}")
+
+    # Create the dataset directory
+    if dataset_dir.exists() and dataset_dir.is_dir():
+        shutil.rmtree(dataset_dir)
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+
+    metadata = {
+        "dataset_name": dataset_name,
+        "author": "GSI Environmental Inc.",
+        "created_at": datetime.now().isoformat(),
+    }
+    schema_with_metadata = schema.with_metadata(
+        {k: str(v).encode("utf-8") for k, v in metadata.items()}
+    )
+    metadata_collector = []
+
+    with conn.cursor(
+        name="phyto_db_large_export", cursor_factory=RealDictCursor
+    ) as cursor:
+        logger.info("Querying database...")
+        cursor.execute(
+            f"""
+            SELECT
+                *,
+                replace(provider, ' ', '_') as provider_key,
+                extract(year from sample_date)::integer as year
+            FROM (
+                {sql}
+            ) as subquery
+            WHERE
+                extract(year from sample_date) >= 1999
+        """
+        )
+        logger.info(f"Writing results to parquet in {dataset_dir}")
+        with tqdm(desc="Processing batches", unit=" batch") as pbar:
+            while True:
+                # Fetch a batch of rows
+                rows = cursor.fetchmany(BATCH_SIZE)
+                if not rows:
+                    break
+                # Convert fetched rows (list of dictionaries) to a pyarrow Table
+                # Convert dictionary rows to columns (pyarrow expects columns)
+                # batch_dict = {key: [row[key] for row in rows] for key in rows[0]}
+                # Ensure all keys exist in each batch to match the schema
+                batch_dict = {
+                    key: [row.get(key, None) for row in rows] for key in schema.names
+                }
+
+                table = pa.Table.from_pydict(batch_dict, schema=schema_with_metadata)
+                # Write Arrow Table to Parquet file (as part of a dataset)
+                pq.write_to_dataset(
+                    table=table,
+                    root_path=dataset_dir,
+                    compression="snappy",
+                    partition_cols=PARTITION_COLS,
+                    use_threads=True,
+                    metadata_collector=metadata_collector,
+                )
+                pbar.update(1)
+
+            # Remove the partition columns from the schema
+            # so we can write the metadata file
+            for _ in range(len(PARTITION_COLS)):
+                schema = schema.remove(len(schema) - 1)
+
+            for key, value in metadata.items():
+                metadata_collector[0].metadata[key] = str(value).encode("utf-8")
+
+            # Write combined metadata file
+            pq.write_metadata(
+                schema=schema.with_metadata(
+                    {k: str(v).encode("utf-8") for k, v in metadata.items()}
+                ),
+                where=f"{dataset_dir}/_metadata",
+                metadata_collector=metadata_collector,
+            )
+            logger.info(f"Metadata written to {dataset_dir / '_metadata'}")
+
+    logger.info("Dataset export complete")
+    meta = pq.read_metadata(dataset_dir / "_metadata")
+    ds = pq.ParquetDataset(dataset_dir)
+    logger.info(f"  num_files      : {len(ds.files)}")
+    logger.info(f"  format_version : {meta.format_version}")
+    logger.info(f"  num_columns     : {meta.num_columns}")
+    logger.info(f"  num_row_groups : {meta.num_row_groups}")
+    logger.info(f"  num_rows       : {meta.num_rows}")
+
+    for key, value in meta.metadata.items():
+        if "schema" not in key.decode("utf-8"):
+            logger.info(f"  {str(key.decode('utf-8')):<15}: {value.decode('utf-8')}")
+
+
+def mooring_export():
+    dataset_name = "Mooring"
+    schema = pa.schema(
+        [
+            ("area_id", pa.string()),
+            ("location_id", pa.string()),
+            ("loc_desc", pa.string()),
+            ("loc_type", pa.string()),
+            ("x_coord", pa.float64()),
+            ("y_coord", pa.float64()),
+            ("srid", pa.int64()),
+            ("coord_sys", pa.string()),
+            ("loc_method", pa.string()),
+            ("provider", pa.string()),
+            ("study_id", pa.string()),
+            ("study_name", pa.string()),
+            ("study_loc_id", pa.string()),
+            ("sample_doc", pa.string()),
+            ("sample_date", pa.timestamp("us")),
+            ("coll_scheme", pa.string()),
+            ("sample_material", pa.string()),
+            ("sample_id", pa.string()),
+            ("sample_desc", pa.string()),
+            ("upper_depth", pa.float64()),
+            ("lower_depth", pa.float64()),
+            ("depth_units", pa.string()),
+            ("comments", pa.string()),
+            ("parameter", pa.string()),
+            ("meas_method", pa.string()),
+            ("replicate", pa.string()),
+            ("result", pa.float64()),
+            ("units", pa.string()),
+            ("detected", pa.string()),
+            ("qualifiers", pa.string()),
+            ("validator_flags", pa.string()),
+            ("qa_level", pa.string()),
+            ("data_quality", pa.string()),
+            ("provider_key", pa.string()),
+            ("year", pa.int32()),
+        ]
+    )
+
+    sql = """
+        SELECT
+            *
+        FROM app.mooring
+        WHERE
+            parameter in (
+                'Turbidity',
+                'Chlorophyll',
+                'ChlorophyllFluor',
+                'ChloroFluor_adj',
+                'Fluorescence_adj',
+                'BeamTransmission'
+            )
+    """
+
+    postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
+
+
+def ctd_export():
+    dataset_name = "CTD"
+    schema = pa.schema(
+        [
+            ("area_id", pa.string()),
+            ("location_id", pa.string()),
+            ("loc_desc", pa.string()),
+            ("loc_type", pa.string()),
+            ("x_coord", pa.float64()),
+            ("y_coord", pa.float64()),
+            ("srid", pa.int64()),
+            ("coord_sys", pa.string()),
+            ("loc_method", pa.string()),
+            ("provider", pa.string()),
+            ("study_id", pa.string()),
+            ("study_name", pa.string()),
+            ("study_loc_id", pa.string()),
+            ("sample_doc", pa.string()),
+            ("sample_date", pa.timestamp("us")),
+            ("coll_scheme", pa.string()),
+            ("sample_material", pa.string()),
+            ("sample_id", pa.string()),
+            ("sample_desc", pa.string()),
+            ("upper_depth", pa.float64()),
+            ("lower_depth", pa.float64()),
+            ("depth_units", pa.string()),
+            ("comments", pa.string()),
+            ("parameter", pa.string()),
+            ("meas_method", pa.string()),
+            ("replicate", pa.string()),
+            ("result", pa.float64()),
+            ("units", pa.string()),
+            ("detected", pa.string()),
+            ("qualifiers", pa.string()),
+            ("validator_flags", pa.string()),
+            ("qa_level", pa.string()),
+            ("data_quality", pa.string()),
+            ("provider_key", pa.string()),
+            ("year", pa.int32()),
+        ]
+    )
+
+    sql = """
+        SELECT
+            *
+        FROM app.ctd
+        WHERE
+            parameter in (
+                'Turbidity',
+                'Chlorophyll',
+                'ChlorophyllFluor',
+                'ChloroFluor_adj',
+                'Fluorescence_adj',
+                'BeamTransmission'
+            )
+    """
+
+    postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
+
+
+def bottle_export():
+    dataset_name = "Bottle"
+    schema = pa.schema(
+        [
+            ("area_id", pa.string()),
+            ("location_id", pa.string()),
+            ("loc_desc", pa.string()),
+            ("loc_type", pa.string()),
+            ("loc_geom", pa.string()),
+            ("x_coord", pa.float64()),
+            ("y_coord", pa.float64()),
+            ("srid", pa.int64()),
+            ("coord_sys", pa.string()),
+            ("loc_method", pa.string()),
+            ("provider", pa.string()),
+            ("study_id", pa.string()),
+            ("study_name", pa.string()),
+            ("sample_doc", pa.string()),
+            ("sample_date", pa.timestamp("us")),
+            ("coll_scheme", pa.string()),
+            ("sample_material", pa.string()),
+            ("sample_id", pa.string()),
+            ("sample_desc", pa.string()),
+            ("original_sample_id", pa.string()),
+            ("upper_depth", pa.float64()),
+            ("lower_depth", pa.float64()),
+            ("depth_units", pa.string()),
+            ("split_type", pa.string()),
+            ("sample_no", pa.string()),
+            ("lab", pa.string()),
+            ("lab_pkg", pa.string()),
+            ("material", pa.string()),
+            ("material_analyzed", pa.string()),
+            ("labsample", pa.string()),
+            ("lab_rep", pa.string()),
+            ("method_code", pa.string()),
+            ("method_desc", pa.string()),
+            ("chem_class", pa.string()),
+            ("cas_rn", pa.string()),
+            ("analyte", pa.string()),
+            ("analyte_name", pa.string()),
+            ("result", pa.float64()),
+            ("qualifiers", pa.string()),
+            ("lab_flags", pa.string()),
+            ("validator_flags", pa.string()),
+            ("detected", pa.string()),
+            ("detection_limit", pa.float64()),
+            ("quantification_limit", pa.float64()),
+            ("reporting_limit", pa.float64()),
+            ("units", pa.string()),
+            ("meas_basis", pa.string()),
+            ("fraction", pa.string()),
+            ("dilution_factor", pa.float64()),
+            ("data_quality", pa.string()),
+            ("qa_level", pa.string()),
+            ("date_analyzed", pa.timestamp("us")),
+            ("date_extracted", pa.timestamp("us")),
+            ("doc_file", pa.string()),
+            ("comments", pa.string()),
+            ("provider_key", pa.string()),
+            ("year", pa.int32()),
+        ]
+    )
+
+    dataset_name = "Bottle"
+
+    sql = """
+        SELECT
+            *
+        FROM app.bottle
+        WHERE
+            analyte in (
+                'Turbidity',
+                'ChlorophyllA',
+                'Chlorophyll',
+                'Chlorophyll_Avg',
+                'BeamTransmission'
+            )
+    """
+
+    postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
+
+
+def main():
+    args = clparser().parse_args()
+    _bottle_export = False
+    _mooring_export = False
+    _ctd_export = False
+    if args.dataset == "bottle" or args.dataset == "all":
+        _bottle_export = True
+    if args.dataset == "mooring" or args.dataset == "all":
+        _mooring_export = True
+    if args.dataset == "ctd" or args.dataset == "all":
+        _ctd_export = True
+
+    logger.info("Starting export...")
+    logger.info(f"Bottle Export  : {_bottle_export}")
+    logger.info(f"Mooring Export : {_mooring_export}")
+    logger.info(f"CTD Export     : {_ctd_export}")
+
+    if _bottle_export:
+        bottle_export()
+    if _mooring_export:
+        mooring_export()
+    if _ctd_export:
+        ctd_export()
+
+    logger.info(f"Compressing output directory to {GZ_TARFILE}...")
+    with tarfile.open(GZ_TARFILE, "w:gz") as tar:
+        tar.add(OUTDIR, arcname=OUTDIR.name)
+
+    # Get the size of the tar.gz file
+    tar_gz_size = GZ_TARFILE.stat().st_size
+
+    logger.info(f"Size of {GZ_TARFILE}: {tar_gz_size} bytes")
+    tar_gz_size_kb = tar_gz_size / 1000
+    logger.info(f"Size of {GZ_TARFILE}: {tar_gz_size_kb} KB")
+    tar_gz_size_mb = tar_gz_size_kb / 1000
+    logger.info(f"Size of {GZ_TARFILE}: {tar_gz_size_mb} MB")
+    tar_gz_size_gb = tar_gz_size_mb / 1000
+    logger.info(f"Size of {GZ_TARFILE}: {tar_gz_size_gb} GB")
+    tar_gz_size_tb = tar_gz_size_gb / 1000
+    logger.info(f"Size of {GZ_TARFILE}: {tar_gz_size_tb} TB")
+
+
+if __name__ == "__main__":
+    try:
+        conn = psycopg2.connect(
+            host=PG_HOST, database=PG_DATABASE, user=PG_USER, password=PG_PASSWORD
+        )
+    except Exception as err:
+        raise err
+
+    try:
+        main()
+    except Exception as err:
+        raise err
+    finally:
+        conn.close()
+```

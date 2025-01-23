@@ -1,0 +1,231 @@
+---
+title: "Washington Department of Ecology Long-term Marine Water & Sediment Data"
+provider: "Washington State Department of Ecology"
+code-fold: show
+---
+
+## Data Source
+
+- **Data Provider**: Washington State Department of Ecology
+- **Document title**: Washington Department of Ecology Long-term Marine Water & Sediment Data
+- **Document URL**: [https://apps.ecology.wa.gov/eim/search/SMP/MarineAmbientSearch.aspx?StudyMonitoringProgramUserId=MarineAmbient&StudyMonitoringProgramUserIdSearchType=Equals](https://apps.ecology.wa.gov/eim/search/SMP/MarineAmbientSearch.aspx?StudyMonitoringProgramUserId=MarineAmbient&StudyMonitoringProgramUserIdSearchType=Equals)
+
+## Preprocessing
+
+Data were provided in a variety of formats, including NetCDF, CSV, and Excel. NetCDF files were converted to CSV for loading into the database. The following preprocessing code was used to convert the NetCDF files:
+
+```python
+#!/usr/bin/env python
+
+# preprocess.py
+#
+# PURPOSE
+#   Transform Washington Ecology CTD netCDF files to CSV files.
+#
+# PROJECT
+#    6983 - Washington Ecology Phyto Indicator
+#
+# NOTES
+#   1. This script should be run with Python 3.10 or 3.11 using
+#       the command `python preprocess.py`.
+#
+# AUTHOR(S)
+#   Caleb Grant, GSI Environmental Inc. (CG)
+#
+# HISTORY
+#  Date      Remarks
+# ---------- -------------------------------------------------------------
+# 2024-07-01 Created (CG)
+# 2024-07-01 Initial code review and QA - no issues found (Brandon Sackmann)
+# ==========================================================================
+
+import argparse
+import logging
+from pathlib import Path
+
+import netCDF4 as nc
+import pandas as pd
+
+# Set up logging
+logfile = Path(Path(__file__).parent / "logs/preprocess.log")
+if logfile.exists():
+    logfile.unlink()
+if not logfile.parent.exists():
+    logfile.parent.mkdir(parents=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s",
+    datefmt="[%Y-%m-%d %H:%M:%S]",
+    handlers=[logging.StreamHandler(), logging.FileHandler(logfile.as_posix())],
+)
+
+
+def clparser() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Preprocess Washington Ecology CTD netCDF files"
+    )
+    parser.add_argument(
+        "data_dir",
+        type=Path,
+        help="The directory containing the Washington Ecology CTD netCDF files",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = clparser()
+    data_dir = args.data_dir
+    """Main function for preprocessing Washington Ecology CTD netCDF files."""
+    if not data_dir.exists():
+        logging.error(f"Data directory does not exist: {data_dir}")
+        exit(1)
+
+    logging.info(
+        "Performing preprocessing on Washington Ecology CTD netCDF files. This script will convert netCDF files to CSV files."
+    )
+    logging.info(f"Reading netCDF files from the data directory: {data_dir}\n")
+
+    for file in data_dir.glob("*.nc"):
+        logging.info(f"Processing file: {file}")
+        # Open the netCDF file
+        data = nc.Dataset(file)
+        # Get the dimensions of the netCDF file
+        dims = {dim: data.dimensions[dim].size for dim in data.dimensions}
+        logging.info("Dimensions:")
+        for dim, size in dims.items():
+            logging.info(f"  {dim}: {size}")
+
+        logging.info("Converting netCDF file to a dataframe")
+        variables = {
+            var: data.variables[var][:]
+            for var in data.variables
+            if data.variables[var].size == dims["obs"]
+        }
+        df = pd.DataFrame(variables)
+
+        # Create a dataframe of all the variables that have the same size as the number of profiles
+        logging.info("Creating a dataframe of profile variables")
+        profile_vars = {
+            var: data.variables[var][:]
+            for var in data.variables
+            if data.variables[var].size == dims["profiles"]
+        }
+        df_profile = pd.DataFrame(profile_vars)
+
+        # Create a dataframe of all the variables that have the same size as the number of stations
+        logging.info("Creating a dataframe of station variables")
+        station_vars = {
+            var: data.variables[var][:]
+            for var in data.variables
+            if data.variables[var].size == dims["stations"]
+        }
+        df_station = pd.DataFrame(station_vars)
+
+        # Merge the profile and station dataframes with the main dataframe.
+        logging.info("Merging profile and station dataframes with the main dataframe")
+        df = pd.merge(
+            df, df_profile, left_on="obs_index", right_on="profile_index", how="left"
+        )
+        df = pd.merge(
+            df,
+            df_station,
+            left_on="station_index",
+            right_on="station_number",
+            how="left",
+        )
+
+        logging.info("Adding global attributes to the dataframe")
+        global_attrs = {attr: data.getncattr(attr) for attr in data.ncattrs()}
+        for attr, value in global_attrs.items():
+            # References is a keyword in PostgreSQL and also not a useful attribute for the database
+            if attr == "references":
+                continue
+            df[attr] = value
+
+        # Add the filename to the dataframe
+        df["filename"] = file.name
+
+        # Verify that every row has a profile_index and station_number
+        try:
+            assert df["profile_index"].notnull().all()
+            assert df["station_number"].notnull().all()
+        except AssertionError:
+            logging.error("Some rows are missing profile_index or station_number")
+
+        # Save the dataframe to a CSV file
+        outfile = file.with_suffix(".csv")
+        logging.info(f"Saving data to {outfile}\n")
+        df.to_csv(outfile, index=False)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        raise e
+```
+
+## Comments and Assumptions
+
+1. Measurements with values of `-99`, or `-99999.9` have failed quality control from the data provider and are not loaded into the database.
+2. Measurements with text values of `NA` and `NULL` are considered missing and not loaded into the database.
+3. UTC timestamps are converted to PST.
+4. The following parameters are classified as field sensor measurements:
+
+   - Turbidity
+   - SpConductivity
+   - Density
+   - BatC
+   - DOsat_adj
+   - DO_adj
+   - Salinity
+   - LightTrans_25cm
+   - Fluorescence_adj
+   - Temperature
+   - Pressure
+
+    All other measurements are considered lab measurements.
+
+5. There are multiple QA/QC flags for each measurement. All flags are preserved and loaded into the database as a single concatenated string with the following format: `<QC>_<QF>_<QA>`. If any of the flags are missing, they are set to `#`.
+
+## Naming Conventions
+
+Environmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.
+
+The Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.
+
+In order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.
+
+### Samples
+
+Sample names are constructed using the following convention: `WA_Ecology_<station>_<depth>_<upcast/downcast>_YYYYMMDDHH24MI`. This convention is used to ensure that each sample is uniquely identified.
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("WA_Ecology")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```

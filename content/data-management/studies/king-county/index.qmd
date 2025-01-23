@@ -1,0 +1,109 @@
+---
+title: "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan"
+provider: "King County"
+code-fold: show
+---
+
+## Data Source
+
+- **Data Provider**: King County
+- **Document title**: Marine Phytoplankton Monitoring Program Sampling and Analysis Plan
+- **Document URL**: [https://green2.kingcounty.gov/marine/](https://green2.kingcounty.gov/marine/)
+
+## Comments and Assumptions
+
+1. The [Stations.xlsx](./Stations.xlsx) file was created manually from pages 18 and 21 of the report **kcr3135.pdf**, which contains location descriptions and coordinates for the onshore and offshore stations which collected CTD and bottle data. Additionally, mooring lat/long coordinates were pulled from each `xls` file in the `Mooring` folder.
+2. CTD data:
+    - Any records with no measurement reading are excluded from the data loading process.
+3. Bottle data:
+   - Any records with no measurement reading are excluded from the data loading process.
+   - Qualifiers that contain `<MDL` are flagged as undetected
+   - Qualifiers that contain `J` are flagged as estimated
+   - Qualifiers that contain `R` (excluding `RDL`) are flagged as rejected
+   - Qualifiers that contain `E` are flagged as greater than the instruments maximum detection limit
+4. Phytoplankton data:
+   - Any records with no measurement reading are excluded from the data loading process.
+5. The following parameters are classified as field sensor measurements:
+
+   - AirPressure
+   - AirTemp
+   - Chlorophyll
+   - Density
+   - Depth
+   - DO
+   - Humidity
+   - LightIntensity
+   - LightTrans
+   - LoggerBatt
+   - Nitrate
+   - pH
+   - Rainfall
+   - Salinity
+   - SensorBatt
+   - Sigma Density
+   - SurfaceLight
+   - Turbidity
+   - WaterTemp
+   - WindDirection
+   - WindSpeed
+
+    All other measurements are considered lab measurements.
+
+## Naming Conventions
+
+Environmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.
+
+The Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.
+
+In order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.
+
+### Samples
+
+These conventions have been adopted to ensure that each sample is uniquely identified.
+
+#### CTD
+
+Sample names are constructed using the following convention: `<locator>_<YYYYMMDDHH24MISS>_<depth>_<updown>`.
+
+### Mooring
+
+Sample names are constructed using the following convention: `<locator>_<YYYYMMDDHH24MISS>`.
+
+### Lab/Bottle
+
+Sample names are constructed using the following convention:
+
+- When a sample depth is provided: `<locator>_<YYYYMMDDHH24MISS>_<depth>_Up`.
+- When a sample depth is not provided: `<locator>_<YYYYMMDDHH24MISS>_Up`.
+
+### Phytoplankton
+
+Sample names are constructed using the following convention: `<locator>_<YYYYMMDD>`.
+
+## Translations
+
+The following translations were applied to the data:
+
+```{python}
+# | echo: false
+
+from IPython.display import Markdown, display
+from tabulate import tabulate
+import sys
+from pathlib import Path
+
+from itables import init_notebook_mode, show
+
+init_notebook_mode(all_interactive=True)
+
+sys.path.append(
+    Path(Path(".").resolve().parent.parent.parent.parent / "scripts").as_posix()
+)
+from code_translations import get_translations
+
+translations = get_translations("KingCounty")
+
+for table in translations:
+    display(Markdown(f"### {table.title().replace('X_', '')}s"))
+    show(translations[table], classes="display nowrap compact stripe")
+```
