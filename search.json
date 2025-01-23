@@ -231,53 +231,455 @@
     ]
   },
   {
-    "objectID": "content/examples.html",
-    "href": "content/examples.html",
-    "title": "Examples",
+    "objectID": "content/data-management/studies/washington-ecology/index.html",
+    "href": "content/data-management/studies/washington-ecology/index.html",
+    "title": "Washington Department of Ecology Long-term Marine Water & Sediment Data",
     "section": "",
-    "text": "Code\nimport os\n\nif \"POSTGRES_DATABASE\" in os.environ:\n    print(\"Postgres database found in environment variables!\")\n    print(f\"Database name: {os.getenv('POSTGRES_DATABASE')}\")\nelse:\n    print(\"Postgres database not found in environment variables!\")\n\n\nPostgres database found in environment variables!\nDatabase name: phyto_indicator"
+    "text": "Data Provider: Washington State Department of Ecology\nDocument title: Washington Department of Ecology Long-term Marine Water & Sediment Data\nDocument URL: https://apps.ecology.wa.gov/eim/search/SMP/MarineAmbientSearch.aspx?StudyMonitoringProgramUserId=MarineAmbient&StudyMonitoringProgramUserIdSearchType=Equals",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Washington Department of Ecology Long-term Marine Water & Sediment Data"
+    ]
   },
   {
-    "objectID": "content/examples.html#environment-variables",
-    "href": "content/examples.html#environment-variables",
-    "title": "Examples",
+    "objectID": "content/data-management/studies/washington-ecology/index.html#data-source",
+    "href": "content/data-management/studies/washington-ecology/index.html#data-source",
+    "title": "Washington Department of Ecology Long-term Marine Water & Sediment Data",
     "section": "",
-    "text": "Code\nimport os\n\nif \"POSTGRES_DATABASE\" in os.environ:\n    print(\"Postgres database found in environment variables!\")\n    print(f\"Database name: {os.getenv('POSTGRES_DATABASE')}\")\nelse:\n    print(\"Postgres database not found in environment variables!\")\n\n\nPostgres database found in environment variables!\nDatabase name: phyto_indicator"
+    "text": "Data Provider: Washington State Department of Ecology\nDocument title: Washington Department of Ecology Long-term Marine Water & Sediment Data\nDocument URL: https://apps.ecology.wa.gov/eim/search/SMP/MarineAmbientSearch.aspx?StudyMonitoringProgramUserId=MarineAmbient&StudyMonitoringProgramUserIdSearchType=Equals",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Washington Department of Ecology Long-term Marine Water & Sediment Data"
+    ]
   },
   {
-    "objectID": "content/examples.html#icons",
-    "href": "content/examples.html#icons",
-    "title": "Examples",
-    "section": "Icons",
-    "text": "Icons\n\nBootstrap Icons\nDocs\n  \n\n\nMaterial Icons\nDocs\nanalytics bar_chart"
+    "objectID": "content/data-management/studies/washington-ecology/index.html#preprocessing",
+    "href": "content/data-management/studies/washington-ecology/index.html#preprocessing",
+    "title": "Washington Department of Ecology Long-term Marine Water & Sediment Data",
+    "section": "Preprocessing",
+    "text": "Preprocessing\nData were provided in a variety of formats, including NetCDF, CSV, and Excel. NetCDF files were converted to CSV for loading into the database. The following preprocessing code was used to convert the NetCDF files:\n#!/usr/bin/env python\n\n# preprocess.py\n#\n# PURPOSE\n#   Transform Washington Ecology CTD netCDF files to CSV files.\n#\n# PROJECT\n#    6983 - Washington Ecology Phyto Indicator\n#\n# NOTES\n#   1. This script should be run with Python 3.10 or 3.11 using\n#       the command `python preprocess.py`.\n#\n# AUTHOR(S)\n#   Caleb Grant, GSI Environmental Inc. (CG)\n#\n# HISTORY\n#  Date      Remarks\n# ---------- -------------------------------------------------------------\n# 2024-07-01 Created (CG)\n# 2024-07-01 Initial code review and QA - no issues found (Brandon Sackmann)\n# ==========================================================================\n\nimport argparse\nimport logging\nfrom pathlib import Path\n\nimport netCDF4 as nc\nimport pandas as pd\n\n# Set up logging\nlogfile = Path(Path(__file__).parent / \"logs/preprocess.log\")\nif logfile.exists():\n    logfile.unlink()\nif not logfile.parent.exists():\n    logfile.parent.mkdir(parents=True)\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(message)s\",\n    datefmt=\"[%Y-%m-%d %H:%M:%S]\",\n    handlers=[logging.StreamHandler(), logging.FileHandler(logfile.as_posix())],\n)\n\n\ndef clparser() -&gt; argparse.Namespace:\n    \"\"\"Parse command line arguments.\"\"\"\n    parser = argparse.ArgumentParser(\n        description=\"Preprocess Washington Ecology CTD netCDF files\"\n    )\n    parser.add_argument(\n        \"data_dir\",\n        type=Path,\n        help=\"The directory containing the Washington Ecology CTD netCDF files\",\n    )\n    return parser.parse_args()\n\n\ndef main() -&gt; None:\n    args = clparser()\n    data_dir = args.data_dir\n    \"\"\"Main function for preprocessing Washington Ecology CTD netCDF files.\"\"\"\n    if not data_dir.exists():\n        logging.error(f\"Data directory does not exist: {data_dir}\")\n        exit(1)\n\n    logging.info(\n        \"Performing preprocessing on Washington Ecology CTD netCDF files. This script will convert netCDF files to CSV files.\"\n    )\n    logging.info(f\"Reading netCDF files from the data directory: {data_dir}\\n\")\n\n    for file in data_dir.glob(\"*.nc\"):\n        logging.info(f\"Processing file: {file}\")\n        # Open the netCDF file\n        data = nc.Dataset(file)\n        # Get the dimensions of the netCDF file\n        dims = {dim: data.dimensions[dim].size for dim in data.dimensions}\n        logging.info(\"Dimensions:\")\n        for dim, size in dims.items():\n            logging.info(f\"  {dim}: {size}\")\n\n        logging.info(\"Converting netCDF file to a dataframe\")\n        variables = {\n            var: data.variables[var][:]\n            for var in data.variables\n            if data.variables[var].size == dims[\"obs\"]\n        }\n        df = pd.DataFrame(variables)\n\n        # Create a dataframe of all the variables that have the same size as the number of profiles\n        logging.info(\"Creating a dataframe of profile variables\")\n        profile_vars = {\n            var: data.variables[var][:]\n            for var in data.variables\n            if data.variables[var].size == dims[\"profiles\"]\n        }\n        df_profile = pd.DataFrame(profile_vars)\n\n        # Create a dataframe of all the variables that have the same size as the number of stations\n        logging.info(\"Creating a dataframe of station variables\")\n        station_vars = {\n            var: data.variables[var][:]\n            for var in data.variables\n            if data.variables[var].size == dims[\"stations\"]\n        }\n        df_station = pd.DataFrame(station_vars)\n\n        # Merge the profile and station dataframes with the main dataframe.\n        logging.info(\"Merging profile and station dataframes with the main dataframe\")\n        df = pd.merge(\n            df, df_profile, left_on=\"obs_index\", right_on=\"profile_index\", how=\"left\"\n        )\n        df = pd.merge(\n            df,\n            df_station,\n            left_on=\"station_index\",\n            right_on=\"station_number\",\n            how=\"left\",\n        )\n\n        logging.info(\"Adding global attributes to the dataframe\")\n        global_attrs = {attr: data.getncattr(attr) for attr in data.ncattrs()}\n        for attr, value in global_attrs.items():\n            # References is a keyword in PostgreSQL and also not a useful attribute for the database\n            if attr == \"references\":\n                continue\n            df[attr] = value\n\n        # Add the filename to the dataframe\n        df[\"filename\"] = file.name\n\n        # Verify that every row has a profile_index and station_number\n        try:\n            assert df[\"profile_index\"].notnull().all()\n            assert df[\"station_number\"].notnull().all()\n        except AssertionError:\n            logging.error(\"Some rows are missing profile_index or station_number\")\n\n        # Save the dataframe to a CSV file\n        outfile = file.with_suffix(\".csv\")\n        logging.info(f\"Saving data to {outfile}\\n\")\n        df.to_csv(outfile, index=False)\n\n\nif __name__ == \"__main__\":\n    try:\n        main()\n    except Exception as e:\n        raise e",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Washington Department of Ecology Long-term Marine Water & Sediment Data"
+    ]
   },
   {
-    "objectID": "content/examples.html#code-blocks",
-    "href": "content/examples.html#code-blocks",
-    "title": "Examples",
-    "section": "Code Blocks",
-    "text": "Code Blocks\n\nStatic Code Blocks\nprint(\"Hello World!\")\n\n\nExecutable Python Code\nDocs\n\nNote the document format is set to live-html in the front matter.\n\n\n\n\n\n\n\n\n\nExecutable R Code\nDocs\n\nNote the document format is set to live-html in the front matter."
+    "objectID": "content/data-management/studies/washington-ecology/index.html#comments-and-assumptions",
+    "href": "content/data-management/studies/washington-ecology/index.html#comments-and-assumptions",
+    "title": "Washington Department of Ecology Long-term Marine Water & Sediment Data",
+    "section": "Comments and Assumptions",
+    "text": "Comments and Assumptions\n\nMeasurements with values of -99, or -99999.9 have failed quality control from the data provider and are not loaded into the database.\nMeasurements with text values of NA and NULL are considered missing and not loaded into the database.\nUTC timestamps are converted to PST.\nThe following parameters are classified as field sensor measurements:\n\nTurbidity\nSpConductivity\nDensity\nBatC\nDOsat_adj\nDO_adj\nSalinity\nLightTrans_25cm\nFluorescence_adj\nTemperature\nPressure\n\nAll other measurements are considered lab measurements.\nThere are multiple QA/QC flags for each measurement. All flags are preserved and loaded into the database as a single concatenated string with the following format: &lt;QC&gt;_&lt;QF&gt;_&lt;QA&gt;. If any of the flags are missing, they are set to #.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Washington Department of Ecology Long-term Marine Water & Sediment Data"
+    ]
   },
   {
-    "objectID": "content/examples.html#diagrams",
-    "href": "content/examples.html#diagrams",
-    "title": "Examples",
-    "section": "Diagrams",
-    "text": "Diagrams\nExtension Docs\n\nMermaid Diagrams\nMermaid Docs\n\n\n\n\n\ngraph TD;\n  A--&gt;B;\n  A--&gt;C;\n  B--&gt;D;\n  C--&gt;D;"
+    "objectID": "content/data-management/studies/washington-ecology/index.html#naming-conventions",
+    "href": "content/data-management/studies/washington-ecology/index.html#naming-conventions",
+    "title": "Washington Department of Ecology Long-term Marine Water & Sediment Data",
+    "section": "Naming Conventions",
+    "text": "Naming Conventions\nEnvironmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.\nThe Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.\nIn order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.\n\nSamples\nSample names are constructed using the following convention: WA_Ecology_&lt;station&gt;_&lt;depth&gt;_&lt;upcast/downcast&gt;_YYYYMMDDHH24MI. This convention is used to ensure that each sample is uniquely identified.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Washington Department of Ecology Long-term Marine Water & Sediment Data"
+    ]
   },
   {
-    "objectID": "content/examples.html#embedding-code-files",
-    "href": "content/examples.html#embedding-code-files",
-    "title": "Examples",
-    "section": "Embedding Code Files",
-    "text": "Embedding Code Files\nDocs\n\n\nCode\n  # the requested version of renv\n  version &lt;- \"1.0.11\""
+    "objectID": "content/data-management/studies/washington-ecology/index.html#translations",
+    "href": "content/data-management/studies/washington-ecology/index.html#translations",
+    "title": "Washington Department of Ecology Long-term Marine Water & Sediment Data",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Washington Department of Ecology Long-term Marine Water & Sediment Data"
+    ]
   },
   {
-    "objectID": "content/examples.html#download-files",
-    "href": "content/examples.html#download-files",
-    "title": "Examples",
-    "section": "Download Files",
-    "text": "Download Files\nDocs\n Download Python requirements"
+    "objectID": "content/data-management/studies/uw-salish-cruises/index.html",
+    "href": "content/data-management/studies/uw-salish-cruises/index.html",
+    "title": "Salish Sea Cruises",
+    "section": "",
+    "text": "Data Provider: University of Washington\nData URL: https://nvs.nanoos.org/CruiseSalish\nDate Extracted: 8/1/2024 (Anything added after this has not been pulled into GSIDB, September 2023 downcast/upcast xlsx files were the most recent at this time)\nNumber of Cruises: 79 unique cruises from December 1998 to September 2023\nOriginal Data Location: \\\\houston-dc\\Jobs\\6951-6999\\6983 WA Ecology Phyto Indicator for PS\\Data_Inventory\\_University_of_Washington\\Salish_Cruises_originalData",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Salish Sea Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-salish-cruises/index.html#data-source",
+    "href": "content/data-management/studies/uw-salish-cruises/index.html#data-source",
+    "title": "Salish Sea Cruises",
+    "section": "",
+    "text": "Data Provider: University of Washington\nData URL: https://nvs.nanoos.org/CruiseSalish\nDate Extracted: 8/1/2024 (Anything added after this has not been pulled into GSIDB, September 2023 downcast/upcast xlsx files were the most recent at this time)\nNumber of Cruises: 79 unique cruises from December 1998 to September 2023\nOriginal Data Location: \\\\houston-dc\\Jobs\\6951-6999\\6983 WA Ecology Phyto Indicator for PS\\Data_Inventory\\_University_of_Washington\\Salish_Cruises_originalData",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Salish Sea Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-salish-cruises/index.html#pre-processing",
+    "href": "content/data-management/studies/uw-salish-cruises/index.html#pre-processing",
+    "title": "Salish Sea Cruises",
+    "section": "Pre-Processing",
+    "text": "Pre-Processing\nNone of the original data was modified, all data loading and pre processing was performed on a copy here: \\\\houston-dc\\Jobs\\6951-6999\\6983 WA Ecology Phyto Indicator for PS\\Data_Inventory\\_University_of_Washington\\Salish_Cruises\nThere were 145 individual files to go through (65 .csv and 80 .xlsx)\nStep 1 was to convert them all to csvs\nUpon further inspection trying to summarize all of the 145 files to gather similar columns etc. There were typos found in the naming conventions for “Station IDs” and “Cruise IDs”. In order to give each file and row of data a proper match to a location these needed to be edited. There were also some unknown typos that Brandon and I assumed to be an improper input of the template for some rows of data in certain files, these rows were deleted to maintain the integrity of the data. This is also documented in the “station_info_final_ZC.xlsx” sheet.\nStep 2 was to fix the typos in the original data files so we could get a proper join. All changes are logged in the excel files below:\n\nstation_info_final_ZC.xlsx: \\\\houston-dc\\Jobs\\6951-6999\\6983 WA Ecology Phyto Indicator for PS\\Data_Inventory\\_University_of_Washington\\Salish_Cruises\\station_info_final_ZC.xlsx in the all_fixes sheet\ncruise_info_final_ZC.xlsx: \\\\houston-dc\\Jobs\\6951-6999\\6983 WA Ecology Phyto Indicator for PS\\Data_Inventory\\_University_of_Washington\\Salish_Cruises\\cruise_info_final_ZC.xlsx in the modified_cruise_info sheet\n\nIn order to process the data in an efficient manner 3 patterns were observed based on the template changes over time:\n\nAll downcast and upcast files from 1998 to 2015\nOnly downcast files from 2016-2023\nOnly upcast files from 2016-2023\n\nStep 3 was to un cross tab all of the individual csvs based on these three groupings.\nThe uncross tabbing script unxtab_UWSalishData_ZC.py must be run FIRST before running any .sql scripts in order to prepare the data in long format. The script generates .cfg files for each individual upcast and downcast file and tweaks the template based on which of the 3 groups the file is in. It simotaneously uses a powerful python package called subprocess in order to utilize the posit server and unxtabs all the files within a few minutes. DO NOT try to run on local machine it will take close to an hour. Everything performed here is meant to be SSH to the posit machine. Located in the upsert folder is also a copy of ZC’s unxtab_UWSalishData_ZC_requirements.txt but the packages needed to install are being imported at the top of the script and should be on the posit machine already.\nStep 4 was to create a master column name sheet col_name_metadata.csv file to properly categorize the data into lab or field sensor/ctd measurements.\nThis file was created from a summary sheet all_salish_data_w_cruiseInfo_assumptionCruiseInfo_2_BS.xlsx ZC created at the very beginning trying to understand all 145 files. BS then went through all of the column names to properly categorize the data. located on the server here: \\\\houston-dc\\Jobs\\6951-6999\\6983 WA Ecology Phyto Indicator for PS\\Data_Inventory\\_University_of_Washington\\Salish_Cruises_originalData\\_summarySheets\\all_salish_data_w_cruiseInfo_assumptionCruiseInfo_2_BS.xlsx",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Salish Sea Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-salish-cruises/index.html#comments-and-assumptions",
+    "href": "content/data-management/studies/uw-salish-cruises/index.html#comments-and-assumptions",
+    "title": "Salish Sea Cruises",
+    "section": "Comments and Assumptions",
+    "text": "Comments and Assumptions\nThe following column names from the original data were treated as CTD/sensor field measurements:\n\nBeam Attenuation\nBeam Transmission\nc0S/m: Conductivity\nc1S/m: Conductivity 2\nChlorophyll Fluorescence\nCStarAt0: Beam Attenuation WET Labs C-Star\nCStarTr0: Beam Transmission WET Labs C-Star\nCTD FLU (mg/m3)\nCTD_PH_NBS\nCTDOXY_MG_L_1\nCTDOXY_MG_L_2\nCTDOXY_MG_L_AVG\nCTDPRS_DBAR\nCTDSAL_PSS78\nCTDSAL2_PSS78\nCTDTMP_DEG_C_ITS90\nCTDTMP2_DEC_C_ITS90\ndensity00: Density\ndensity11: Density 2\ndepSM: Depth\nDepth\nDEPTH (M)\nflECO-AFL: Fluorescence WET Labs ECO-AFL/FL\noxsolMg/L: Oxygen Saturation Garcia & Gordon\nOxygen Concentration MG\nOxygen Concentration MG_duplicated_0\nOxygen Concentration MOL\nOxygen Saturation\nPAR\npH\nph: pH\npotemp090C: Potential Temperature\npotemp190C: Potential Temperature 2\nPotential Temperature\nprDM: Pressure Digiquartz\nprdM: Pressure Strain Gauge\nprDM: Pressure Digiquartz\nPressure\nsal00: Salinity Practical\nsal11: Salinity Practical 2\nSalinity\nsbeox0Mg/L: Oxygen SBE 43\nsbeox0ML/L: Oxygen SBE 43\nsbeox0Mm/Kg: Oxygen SBE 43\nsbeox0PS: Oxygen SBE 43\nsbeox0V: Oxygen raw SBE 43\nsbeox1Mg/L: Oxygen SBE 43 2\nsbeox1ML/L: Oxygen SBE 43 2\nsbeox1PS: Oxygen SBE 43 2\nsbeox1V: Oxygen raw SBE 43 2\nsbox0Mm/Kg: Oxygen SBE 43\nsbox1Mm/Kg: Oxygen SBE 43 2\nsigma-Ã00: Density\nsigma-Ã11: Density 2\nsigma-Ã©00: Density\nSigma-t\nsigma-t00: Density\nsigma-t11: Density 2\nSigma-theta\nSIGMATHETA_KG_M3\nSIGMATHETA2_KG_M3\nt090C: Temperature\nt190C: Temperature 2\nTemperature\nTemperature 2\nTemperature 2\nTurbidity\nturbWETntu0: Turbidity WET Labs ECO\n\nThe remainder of the column names were treated as Lab measurements.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Salish Sea Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-salish-cruises/index.html#naming-conventions",
+    "href": "content/data-management/studies/uw-salish-cruises/index.html#naming-conventions",
+    "title": "Salish Sea Cruises",
+    "section": "Naming Conventions",
+    "text": "Naming Conventions\nEnvironmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.\nThe Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast, and a Depth or Pressure measurement.\nIn order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.\n\nSamples\nThese conventions have been adopted to ensure that each sample is uniquely identified.\nSample names are constructed using the following convention:\n\nUpcast Measurements: &lt;CruiseID&gt;_&lt;StationID&gt;_&lt;up/downcast&gt;_&lt;YYYYMMDDHH24MISS&gt;_&lt;depth&gt;_&lt;depth_unit&gt; Depth was not always available so pressure was substituted for those cases\nDowncast Measurements: &lt;CruiseID&gt;_&lt;StationID&gt;_&lt;up/downcast&gt;_&lt;YYYYMMDDHH24MI&gt;_&lt;depth&gt;_&lt;depth_unit&gt; Depth was not always available so pressure was substituted for those cases",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Salish Sea Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-salish-cruises/index.html#proper-script-run-order",
+    "href": "content/data-management/studies/uw-salish-cruises/index.html#proper-script-run-order",
+    "title": "Salish Sea Cruises",
+    "section": "Proper Script Run Order",
+    "text": "Proper Script Run Order\nIn order for the data to be handled correctly these are the steps the scripts were run in (assuming the data is already cleaned):\n\n[unxtab_UWSalishData_ZC.py](./unxtab_UWSalishData_ZC.py) ZC data pre processing SEE header for specific information on how script works\nload_uw_salish_cruises.sql CG created this script to load the location data first from the station_info_final_ZC.csv file (only updates the d_location and d_studylocation tables)\nload_uw_salish_data.sql ZC data loading\n\nThis script the following 3 .txt files in order to pull in the filepaths for the three groups of source data, all located in the main upsert folder:\n\n0_csv_filepaths.txt\n0_xlsx_down_filepaths.txt\n0_xlsx_up_filepaths.txt\n\nThese three files ZC created using src_data_filepath_list_generation.ipynb in the upsert directory\n\n\nBelow is code from the unxtab_UWSalishData_ZC.py script:\n\n\nunxtab_UWSalishData_ZC.py\n\n# %%\n#!/usr/bin/env python\n# unxtab_salish_cfg_file_generation.ipynb\n#\n# PURPOSE\n#   Loop through the \"Salish_Cruises\" directory to read in all UW salish ctd/bottle data and create a .cfg file for each file.\n#   Also will execute the un-xtab.py cmd line script to successfully flip all original data into long useable format\n#\n# PROJECT\n#   6983: phyto indicator PS partnership\n#\n# NOTES\n#   1. Originally ran on zach caslers local computer with \"Salish_Cruises\" directory. Check requirements.txt to replicate.\n#   2. There are two sections built into this script to handle the different groupings of source data.  SECTION 1 handles all the older data,\n#       The original csv files from 1998 to 2015 both upcase and downcast files are the same format.  SECTION 2 handles all the newer data,\n#       The original xlsx files from 2016 to 2023. But processes upcast and downcast differently due to the data templates being different.\n#   3. This script creates multiple intermediary files in order to get to the unxtabbed final result as long as the source data is a csv\n#       it will process file for the old data in section 1, in section 2 it converts the &lt;filename.xlsx&gt; to &lt;filename.csv&gt; then:\n#       - first it creates the &lt;filename&gt;_m.csv version of the file to add the metadata like the source file etc.\n#       - next it creates the &lt;filename_m&gt;.cfg\n#       - and finally it will create a untabbed_&lt;filename_m&gt;.csv that will be what we use to join the data in the sql loading script\n#\n# AUTHOR(S)\n#   Zach Casler (ZC)\n#\n# HISTORY\n#  Date      Remarks\n# ---------- -------------------------------------------------------------\n# 2024-06-27 script completed everything ran successfully on ZC's personal computer\n# 2024-08-10 script converted to run off of server paths and ran successfully\n# ==========================================================================\n\n\n# generate un-tab.py cfg files for all uw salish data\n# import pandas as pd\nimport polars as pl\nfrom pathlib import Path\nimport subprocess\n\n# import re\nfrom xlsx2csv import Xlsx2csv\nimport sys\n\npl.Config.set_fmt_str_lengths(45)\n\n\n# important function to get proper path format to run subprocess un-xtab.py\ndef cmd_format_path(path_obj):\n    posix_path = path_obj.as_posix()  # Convert to POSIX path\n    windows_path = posix_path.replace(\n        \"/\", \"\\\\\"\n    )  # Replace forward slashes with backslashes\n    formatted_path = f\".\\\\{windows_path}\"  # Prepend .\\ for relative path notation\n    return formatted_path\n\n\n# set salish data path directory\ndirectory = Path(\"../../../../Data_Inventory/_University_of_Washington/Salish_Cruises\")\n\n## BELOW is the working subprocess in a loop for all csvs\n\n# %%\n# Looping for creating all un-xtab.py cmd line statements in a format to use for subprocesses\n# WORKING RUNS THROUGH ALL CSVS AND UNTABBS CURRENT FILE WITH A SUBPROCESS CMD LINE\n#\n#   20240613 -- Successfully ran through all pre 2016 data files took approx 8 minutes to unxtab all of the files\n#   20240617 -- Running again, added 'None' station filtering, strip() header and data for white spaces, Ran successfully took about 11 minutes\n#   20240703 -- caleb and zach fixed filepaths to work with salish data directory and un subprocesses successfully\n\n#### SECTION 1 ####\n\n# csv handling\n# Get a list of directories in the specified directory\nfolders = [f for f in directory.iterdir() if f.is_dir() and f.name.endswith(\"Data\")]\n\n# Filter folders where the year in the name is 2016 or greater\nfiltered_folders = []\nfor folder in folders:\n    folder_parts = folder.name.split(\"-\")\n    year = int(folder_parts[1].split(\"_\")[0])\n    # Debug: Print each folder and the extracted year\n    # print(f\"Folder: {folder.name}, Extracted Year: {year}\")\n    if year is not None and year &lt;= 2015:\n        filtered_folders.append(folder)\n\nfolder_count = 0\nfile_count = 0\n# Print the list of filtered directories\n# print(\"\\nFiltered directories (2015 or less):\")\nfor folder in filtered_folders:  # gets all pre 2016 folders\n    folder_count += 1\n\n    for file in folder.glob(\"*.csv\"):  # only checks the files that end in \".csv\"\n        if file.name.endswith(\n            (\"downcast.csv\", \"upcast.csv\")\n        ):  # only checks upcast and downcast csvs\n            file = file.resolve()\n\n            # init cmd line run for current file\n            cmd = [\"~/houston-dc-jobs/data-management/bin/un-xtab.py\", \"-c\"]\n\n            file_count += 1\n            print(f\"folder_count {folder_count}\")\n            print(f\"file count {file_count}\")\n            print(f\"curr filename {file.name}\")\n\n            # read and insert meta data\n            curr_df = pl.read_csv(file)\n\n            # Determine cast based on file name\n            if \"downcast\" in file.name.lower():\n                cast_type = \"downcast\"\n            elif \"upcast\" in file.name.lower():\n                cast_type = \"upcast\"\n            else:\n                cast_type = \"N/A\"\n            curr_df = curr_df.insert_column(\n                0, pl.Series(\"cast_type\", [cast_type] * len(curr_df))\n            )\n\n            # insert source filename and path as new columns\n            curr_df = curr_df.insert_column(\n                0, pl.Series(\"source_filename\", [file.name] * len(curr_df))\n            )\n            curr_df = curr_df.insert_column(\n                0, pl.Series(\"source_path\", [str(file)] * len(curr_df))\n            )\n\n            # strip column heaeders of any white spaces\n            curr_df = curr_df.rename({col: col.strip() for col in curr_df.columns})\n\n            # Strip whitespace from each cell in the DataFrame\n            curr_df = curr_df.with_columns(\n                [pl.col(col).str.strip_chars().alias(col) for col in curr_df.columns]\n            )\n\n            # filter out any \"None\" Stations to be ignored on import\n            metadata_rows = curr_df.head(2)  # get the meta data rows\n            curr_df = curr_df.slice(\n                2\n            )  # remove the meta data rows so we dont duplicate them\n            curr_df = curr_df.filter(\n                pl.col(\"Station\") != \"None\"\n            )  # filter out any rows with a 'None' station to be ignored on import\n            curr_df = pl.concat([metadata_rows, curr_df])\n\n            curr_file_new_name = file.parent / f\"{file.stem}_m.csv\"\n            # EXPORT INTO NEW CSV SO WE CAN RUN UNXTAB ON THIS VERSION OF FILE W Orig filepath\n            # and file name and cast type NEW FILE = same name + \"_m\" for metadata\n            curr_df.write_csv(curr_file_new_name)\n\n            curr_cfg_filepath = (\n                file.parent / f\"{file.stem}_m.cfg\"\n            )  # save proper cfg file name\n\n            # CFG file generation below\n            if \"Pressure\" in curr_df.columns:\n                if (\n                    curr_df.get_column_index(\"Pressure\") + 1\n                ) != 11:  # +1 because index is 0 based\n                    print(\n                        f\"CURRENT FILE: {file.name} Does not have PRESSURE at expected INDEX, using value of 11 anyway. PLEASE CHECK FILE\"\n                    )\n                data_cols_start = 11\n                if (\n                    curr_df.get_column_index(\"Depth\") + 1\n                ) != 12:  # +1 because index is 0 based\n                    print(\n                        f\"CURRENT FILE: {file.name} Does not have DEPTH at expected INDEX, using value of 11 anyway. PLEASE CHECK FILE\"\n                    )\n                data_cols_start = 11\n            else:\n                print(\n                    f\"CURRENT FILE: {file.name} Does not have PRESSURE in the HEADERS at all, using value of 11 anyway. PLEASE CHECK FILE\"\n                )\n                data_cols_start = 11\n                if \"Depth\" not in curr_df.columns:  # check for depth as well\n                    print(\n                        f\"CURRENT FILE: {file.name} Does not have DEPTH in the HEADERS at all, using value of 11 anyway. PLEASE CHECK FILE\"\n                    )\n                    data_cols_start = 11\n\n            print(\"start col    \", data_cols_start)\n            data_cols_end = curr_df.width\n            print(\"end col      \", data_cols_end)\n            data_rows_start = 4  # SET MANUALLY\n            print(\"start row    \", data_rows_start)\n            data_rows_end = (\n                len(curr_df) + 1\n            )  # +1 to account for header being a row in excel\n            print(\"end row      \", data_rows_end)\n            # SET MANUALLY (Should be same value as start col if pressure is first col) --we want pressure in the row header and data to include as primary key\n            row_headers_end = (\n                data_cols_start + 1\n            )  # add one to get depth in the row headers but still pull pressure and depth as variables\n            print(\"row hdr end  \", row_headers_end)\n\n            # cfg generation for all csv (up and downcasts are in same data structure) (pre 2016 data ONLY)\n            if file.suffix == \".csv\":\n                with open(curr_cfg_filepath, \"w\") as cfg_file:\n                    cfg_file.write(f\"[{file.stem}_m]\\n\")\n                    cfg_file.write(f\"data_columns={data_cols_start}-{data_cols_end}\\n\")\n                    cfg_file.write(f\"data_rows={data_rows_start}-{data_rows_end}\\n\")\n                    cfg_file.write(f\"row_headers=1-{row_headers_end}\\n\")\n                    cfg_file.write(f\"row_headers_row=1\\n\")\n                    cfg_file.write(\n                        f\"column_header_rows=1-3\\n\"\n                    )  # known that there are only 3 SET MANUALLY\n                    cfg_file.write(f\"column_group_count=1\\n\")\n                    cfg_file.write(f\"column_header_label_1=result_value\\n\")\n                    cfg_file.write(f\"header_as_column_1=1,1,col_name\\n\")\n                    cfg_file.write(f\"header_as_column_2=2,1,units\\n\")\n                    cfg_file.write(f\"header_as_column_3=3,1,ctd_status\")\n            else:\n                print(f\"file:{file.name} failed, filetype not csv\")\n\n            # # building cmd line to pass into subprocess\n            cmd.append(f\"'{curr_cfg_filepath.as_posix()}'\")\n            cmd.append(f\"'{curr_file_new_name.as_posix()}'\")\n            cmd.append(\n                f\"'{(curr_file_new_name.parent / ('untabbed_' + curr_file_new_name.name)).as_posix()}'\"\n            )\n            cmd = [\" \".join(cmd)]\n            print(\"curr cmd list: \", cmd)\n\n            unxtab_run = subprocess.run(cmd, shell=True)\n\n            # Print the output of current subprocess\n            print(\"direct output:\", unxtab_run)\n            print(\"stdout:\", unxtab_run.stdout)\n            print(\"stderr:\", unxtab_run.stderr)\n            print(\"Return code:\", unxtab_run.returncode)\n\n            print(\"-----------------end------------------\")\n\n\n# %%\n## BELOW IS EVERYTHING FOR 2016 and up files where downcast and upcast are different formats and all are stored in xlsx\n\n# successfully converted all xlsx files to csv only clean ones that end in downcast or upcast # DO NOT NEED TO RUN AGAIN\n# DO NOT NEED TO RUN AGAIN UNLESS we have new data to convert then just uncomment the below code chunk\n\n\n# folders = [f for f in directory.iterdir() if f.is_dir() and f.name.endswith(\"Data\")]\n# # Filter folders where the year in the name is 2016 or greater to get just the new .xlsx data\n# filtered_folders = []\n# for folder in folders:\n#     folder_parts = folder.name.split('-')\n#     year = int(folder_parts[1].split('_')[0])\n#     # Debug: Print each folder and the extracted year\n#     # print(f\"Folder: {folder.name}, Extracted Year: {year}\")\n#     if year is not None and year &gt;= 2016:\n#         filtered_folders.append(folder)\n\n# # Print the list of filtered directories\n# # print(\"\\nFiltered directories (2016 or greater):\")\n# for folder in filtered_folders:\n#     #print(folder.name)\n#     for file in folder.glob(\"*.xlsx\"):\n#         if file.name.endswith((\"downcast.xlsx\",\"upcast.xlsx\")):\n#             curr_filepath = file\n#             print(curr_filepath)\n#             csv_output = str(file.parent / f'{file.stem}.csv')\n#             print(csv_output)\n#             Xlsx2csv(curr_filepath, outputencoding=\"utf-8\").convert(outfile=csv_output, sheetid=1)\n#             # Xlsx2csv().convert() redundant line dont need\n\n\n# SUCCESSFUlly RAN ALL XLSX CONVERTED TO CSVS if name ended in upcast or downcast\n\n\n# %%\n\n#### SECTION 2 ####\n\n# xlsx handling post 2015 data\n# 20240619 - ran without untabbing and successfully created all metata data versions of csv up and down casts\n# 20240621 - ran through all 2016+ upcast and downcast files, created cfg files and successfully untabbed all files\n\n# init counter variables\nfolder_count = 0\nfile_count = 0\n\n# Loop through each file in the directory\n\nfolders = [f for f in directory.iterdir() if f.is_dir() and f.name.endswith(\"Data\")]\n\n# Filter folders where the year in the name is 2016 or greater\nfiltered_folders = []\nfor folder in folders:\n    folder_parts = folder.name.split(\"-\")\n    year = int(folder_parts[1].split(\"_\")[0])\n    # Debug: Print each folder and the extracted year\n    # print(f\"Folder: {folder.name}, Extracted Year: {year}\")\n    if year is not None and year &gt;= 2016:\n        filtered_folders.append(folder)\n\n\n# init list to store filenames that need to be checked\nfiles_to_check = []\nfor folder in filtered_folders:\n    folder_count += 1\n    print(f\"folder_count {folder_count}\")\n    print(f\"folder name: {folder.name}\")\n\n    for file in folder.glob(\"*.csv\"):  # only checks the files that end in \".csv\"\n        if file.name.endswith(\n            (\"downcast.csv\", \"upcast.csv\")\n        ):  # only checks upcast and downcast csvs\n            # if file.name.endswith((\"April2016_labupcast.csv\")): # Testing statement for just 1 file\n            file = file.resolve()\n            # init cmd line run for current file\n            cmd = [\"~/houston-dc-jobs/data-management/bin/un-xtab.py\", \"-c\"]\n\n            file_count += 1\n            print(f\"file count {file_count}\")\n            print(f\"curr filename {file.name}\")\n\n            # read and insert meta data\n            curr_df = pl.read_csv(file, infer_schema_length=0)\n            # drop null rows that are appended to the end for some reason\n            curr_df = curr_df.filter(~pl.all_horizontal(pl.all().is_null()))\n            # Determine cast based on file name\n            if \"downcast\" in file.name.lower():\n                cast_type = \"downcast\"\n            elif \"upcast\" in file.name.lower():\n                cast_type = \"upcast\"\n            else:\n                cast_type = \"N/A\"\n\n            curr_df = curr_df.insert_column(\n                0, pl.Series(\"cast_type\", [cast_type] * len(curr_df))\n            )\n\n            # insert source filename and path as new columns\n            curr_df = curr_df.insert_column(\n                0, pl.Series(\"source_filename\", [file.name] * len(curr_df))\n            )\n            curr_df = curr_df.insert_column(\n                0, pl.Series(\"source_path\", [str(file)] * len(curr_df))\n            )\n\n            # strip column heaeders of any white spaces\n            curr_df = curr_df.rename({col: col.strip() for col in curr_df.columns})\n            # change cast to cast_no so it doesnt break sql\n            curr_df = curr_df.rename(\n                {\n                    col: col.replace(\"Cast\", \"cast_no\")\n                    for col in curr_df.columns\n                    if \"Cast\" in col\n                }\n            )\n\n            # Strip whitespace from each cell in the DataFrame\n            curr_df = curr_df.with_columns(\n                [pl.col(col).str.strip_chars().alias(col) for col in curr_df.columns]\n            )\n\n            curr_cfg_filepath = (\n                file.parent / f\"{file.stem}_m.cfg\"\n            )  # save proper cfg file name\n\n            if file.name.endswith(\"downcast.csv\"):\n                # filter out any \"None\" Stations to be ignored on import\n                metadata_rows = curr_df.head(1)  # get the meta data rows\n                curr_df = curr_df.slice(\n                    1\n                )  # remove the meta data rows so we dont duplicate them\n                curr_df = curr_df.filter(\n                    pl.col(\"Station\") != \"None\"\n                )  # filter out any rows with a 'None' station to be ignored on import\n                curr_df = pl.concat([metadata_rows, curr_df])\n\n                # CFG file generation below\n                if (\n                    \"prDM: Pressure  Digiquartz\" in curr_df.columns\n                ):  # checks to see if pressure is in the columns\n                    if (\n                        curr_df.get_column_index(\"prDM: Pressure  Digiquartz\") + 1\n                    ) != 14:  # +1 for zero index in cols\n                        print(\n                            f\"CURRENT FILE: {file.name} Does not have PRESSURE at expected INDEX, using value of 14 anyway. PLEASE CHECK FILE\"\n                        )\n                        files_to_check.append(file.name)\n                    if (\n                        curr_df.get_column_index(\"depSM: Depth\") + 1\n                    ) != 15:  # +1 for zero index in cols\n                        print(\n                            f\"CURRENT FILE: {file.name} Does not have DEPTH at expected INDEX, using value of 14 anyway. PLEASE CHECK FILE\"\n                        )\n                        files_to_check.append(file.name)\n                    data_cols_start = 14\n                elif (\n                    \"prdM: Pressure  Strain Gauge\" in curr_df.columns\n                ):  # alt check for files where they named it pressure strain gauge...\n                    if (\n                        curr_df.get_column_index(\"prdM: Pressure  Strain Gauge\") + 1\n                    ) != 14:  # +1 for zero index in cols\n                        print(\n                            f\"CURRENT FILE: {file.name} Does not have PRESSURE at expected INDEX, using value of 14 anyway. PLEASE CHECK FILE\"\n                        )\n                        files_to_check.append(file.name)\n                    data_cols_start = 14\n                else:\n                    print(\n                        f\"CURRENT FILE: {file.name} Does not have PRESSURE in the column HEADERS, using value of 14 anyway. PLEASE CHECK FILE\"\n                    )\n                    files_to_check.append(file.name)\n                    data_cols_start = 14\n                    if \"depSM: Depth\" not in curr_df.columns:  # check for depth as well\n                        print(\n                            f\"CURRENT FILE: {file.name} Does not have DEPTH in the column HEADERS, using value of 14 anyway. PLEASE CHECK FILE\"\n                        )\n                        files_to_check.append(file.name)\n                        data_cols_start = 14\n\n                print(\"start col    \", data_cols_start)\n                data_cols_end = curr_df.width\n                print(\"end col      \", data_cols_end)\n                data_rows_start = 3  # SET MANUALLY\n                print(\"start row    \", data_rows_start)\n                data_rows_end = (\n                    len(curr_df) + 1\n                )  # +1 to account for header being a row in excel\n                print(\"end row      \", data_rows_end)\n                # SET MANUALLY (Should be same value as start col if pressure is first col) --we want pressure in the row header and data to include as primary key\n                row_headers_end = (\n                    data_cols_start + 1\n                )  # add one to get depth in the row headers but still pull pressure and depth as variables\n                print(\"row hdr end  \", row_headers_end)\n\n                # check if col 'flag:flag'\n\n                # cfg generation for post 2015 DOWNCAST data ONLY\n                if file.suffix == \".csv\":\n                    with open(curr_cfg_filepath, \"w\") as cfg_file:\n                        cfg_file.write(f\"[{file.stem}_m]\\n\")\n                        cfg_file.write(\n                            f\"data_columns={data_cols_start}-{data_cols_end}\\n\"\n                        )\n                        cfg_file.write(f\"data_rows={data_rows_start}-{data_rows_end}\\n\")\n                        cfg_file.write(\n                            f\"row_headers=1-{row_headers_end}\\n\"\n                        )  ## col 'flag:flag' ??\n                        cfg_file.write(f\"row_headers_row=1\\n\")\n                        cfg_file.write(\n                            f\"column_header_rows=1-2\\n\"\n                        )  # known that there are only 2 SET MANUALLY\n                        cfg_file.write(f\"column_group_count=1\\n\")\n                        cfg_file.write(f\"column_header_label_1=result_value\\n\")\n                        cfg_file.write(f\"header_as_column_1=1,1,col_name\\n\")\n                        cfg_file.write(f\"header_as_column_2=2,1,units\\n\")\n                else:\n                    print(f\"file:{file.name} failed, filetype not csv\")\n\n            # IF UPCAST write a DIFFERENT CFG FILE\n            elif file.name.endswith(\"upcast.csv\"):\n                curr_df = curr_df.filter(\n                    pl.col(\"STATION_NO\") != \"None\"\n                )  # remove all rows with no station logged\n\n                # CFG file generation below\n                if (\n                    \"CTDPRS_DBAR\" in curr_df.columns\n                ):  # checks to see if pressure is in the columns\n                    if (\n                        curr_df.get_column_index(\"CTDPRS_DBAR\") + 1\n                    ) != 17:  # +1 for zero index in cols\n                        print(\n                            f\"CURRENT FILE: {file.name} Does not have PRESSURE at expected INDEX, using value of 17 anyway. PLEASE CHECK FILE\"\n                        )\n                        files_to_check.append(file.name)\n                    if (\n                        curr_df.get_column_index(\"DEPTH (M)\") + 1\n                    ) != 18:  # +1 for zero index in cols\n                        print(\n                            f\"CURRENT FILE: {file.name} Does not have DEPTH at expected INDEX, using value of 17 anyway. PLEASE CHECK FILE\"\n                        )\n                        files_to_check.append(file.name)\n                    data_cols_start = 17\n                else:\n                    print(\n                        f\"CURRENT FILE: {file.name} Does not have PRESSURE in the column HEADERS, using value of 17 anyway. PLEASE CHECK FILE\"\n                    )\n                    files_to_check.append(file.name)\n                    data_cols_start = 17\n                    if (\n                        \"DEPTH (M)\" not in curr_df.columns\n                    ):  # checks to see if depth exists in the cols\n                        print(\n                            f\"CURRENT FILE: {file.name} Does not have DEPTH in the column HEADERS, using value of 17 anyway. PLEASE CHECK FILE\"\n                        )\n                        files_to_check.append(file.name)\n                        data_cols_start = 17\n\n                print(\"start col    \", data_cols_start)\n                data_cols_end = curr_df.width\n                print(\"end col      \", data_cols_end)\n                data_rows_start = 2  # SET MANUALLY\n                print(\"start row    \", data_rows_start)\n                data_rows_end = (\n                    len(curr_df) + 1\n                )  # +1 to account for header being a row in excel\n                print(\"end row      \", data_rows_end)\n                # SET MANUALLY (Should be same value as start col if pressure is first col) --we want pressure in the row header and data to include as primary key\n                row_headers_end = (\n                    data_cols_start + 1\n                )  # add one to get depth in the row headers but still pull pressure and depth as variables\n                print(\"row hdr end  \", row_headers_end)\n\n                # cfg generation for post 2015 UPCAST data ONLY\n                if file.suffix == \".csv\":\n                    with open(curr_cfg_filepath, \"w\") as cfg_file:\n                        cfg_file.write(f\"[{file.stem}_m]\\n\")\n                        cfg_file.write(\n                            f\"data_columns={data_cols_start}-{data_cols_end}\\n\"\n                        )  # manually adding all the flag and comment columns to header\n                        cfg_file.write(f\"data_rows={data_rows_start}-{data_rows_end}\\n\")\n                        cfg_file.write(\n                            f\"row_headers=1-{row_headers_end},21,22,25,26,32,33,39,40,44,51,56,60,62,64\\n\"\n                        )\n                        cfg_file.write(f\"row_headers_row=1\\n\")\n                        cfg_file.write(\n                            f\"column_header_rows=1\\n\"\n                        )  # known that there are only 2 SET MANUALLY\n                        cfg_file.write(f\"column_group_count=1\\n\")\n                        cfg_file.write(f\"column_header_label_1=result_value\\n\")\n                        cfg_file.write(f\"header_as_column_1=1,1,col_name\\n\")\n                else:\n                    print(f\"file:{file.name} failed, filetype not csv\")\n\n            # EXPORT INTO NEW CSV SO WE CAN RUN UNXTAB ON THIS VERSION OF FILE W Orig filepath\n            # file name and cast type. NEW FILE = same filename name + \"_m\" for metadata\n            curr_file_new_name = file.parent / f\"{file.stem}_m.csv\"\n            curr_df.write_csv(curr_file_new_name)\n\n            # building cmd line to pass into subprocess\n            cmd.append(f\"'{curr_cfg_filepath.as_posix()}'\")\n            cmd.append(f\"'{curr_file_new_name.as_posix()}'\")\n            cmd.append(\n                f\"'{(curr_file_new_name.parent / ('untabbed_' + curr_file_new_name.name)).as_posix()}'\"\n            )\n            cmd = [\" \".join(cmd)]\n            print(\"curr cmd list: \", cmd)\n\n            unxtab_run = subprocess.run(cmd, shell=True)\n\n            # Print the output of current subprocess\n            print(\"direct output:\", unxtab_run)\n            print(\"stdout:\", unxtab_run.stdout)\n            print(\"stderr:\", unxtab_run.stderr)\n            print(\"Return code:\", unxtab_run.returncode)\n\n            print(\"-----------------end------------------\")\nprint(\"files to check:\", files_to_check)\n\n# End of script",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Salish Sea Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-salish-cruises/index.html#script-review",
+    "href": "content/data-management/studies/uw-salish-cruises/index.html#script-review",
+    "title": "Salish Sea Cruises",
+    "section": "Script Review",
+    "text": "Script Review\nThis section documents the internal review for the 20240506b_load_UW_SalishCruises scripts. Each subheading in this section corresponds to a single script or file in this repository. Contents of each subheading include the review process, comments, and feedback for the corresponding script or file.\n\nReviewer: Caleb Grant\nReview Date: 2024-08-13\n\n\nunxtab_UWSalishData_ZC.py\n\nPlease include a requirements.txt file with the required packages for this script.\nPlease move all important script comments into the script header. It is unclear why the script handles folders &gt;= 2016 differently than folders &lt; 2016 until the the user get’s halfway through the script.\nIt would be helpful if this script generated a logfile instead of printing to the console. There are no records that this script was run. No need to change this now, but it would be helpful in the future.\n\nOverall this script looks good. Well documented and easy to follow. There are quite a few intermediary files that are created. It would be helpful to document these in the README or in the script header.\nOne thing that could further improve readability is to use a Python linter and formatter. This will help with consistent formatting and catch any syntax issues. The package ruff is a good choice for this. You can install it with pip, lint with the command ruff check unxtab_UWSalishData_ZC.py and format with the command ruff format unxtab_UWSalishData_ZC.py.\n\n\nload_uw_salish_cruises.sql\nWe will want to note that this script was originally written to load a different data set, and expects data to already be in the database. I don’t remember the exact file that was used previously.\n\n\nload_uw_salish_data.sql\n\nDo the header notes identify the script’s purpose, author, and revision history?\n\nYes\n\nIs the code formatted for readability?\n\nYes looks good. A couple of improvements could be made, specifically to case statements or string concatenations to help with readability, but overall the script is easy to follow.\n\nOne example; the declaration of the sample_id column in !!staging!!.cleaned_raw_data could be modified from this:\n cruise_id ||'_'||\n station ||'_'||\n cast_type ||'_'||\n case\n     when cast_type = 'upcast' then to_char(utc_timestamp at time zone 'utc' at time zone 'pst', 'YYYYMMDDHH24MISS')\n     when cast_type = 'downcast' then to_char(utc_timestamp at time zone 'utc' at time zone 'pst', 'YYYYMMDDHH24MI')\n     else null\n end\n ||'_'||\n round(coalesce(depth,pressure)::numeric, 3)\n ||'_'||\n case\n     when depth is not null then 'm'\n     when depth is null then 'dbar'\n     else null\n end\n as sample_id,\nto this:\n cruise_id\n     || '_'\n     || station\n     || '_'\n     || cast_type\n     || '_'\n     || CASE\n             WHEN cast_type = 'upcast' THEN\n                 TO_CHAR(utc_timestamp AT TIME ZONE 'utc' AT TIME ZONE 'pst', 'YYYYMMDDHH24MISS')\n             WHEN cast_type = 'downcast' THEN\n                 TO_CHAR(utc_timestamp AT TIME ZONE 'utc' AT TIME ZONE 'pst', 'YYYYMMDDHH24MI')\n             ELSE NULL\n             END\n     || '_'\n     || ROUND(\n             COALESCE(depth, pressure)::numeric,\n             3\n         )\n     || '_'\n     || CASE\n             WHEN depth IS NOT NULL THEN 'm'\n             WHEN depth IS NULL THEN 'dbar'\n             ELSE NULL\n             END\n     AS sample_id\nDo comments accurately describe the purpose of functional blocks within the script?\n\nYes\n\nAre nullable columns used in joins without accounting for the possibility of nulls?\n\nNo\n\nAre nullable columns used in WHERE clause conditions without accounting for the possibility of nulls?\n\nIn the !!staging!!.cleaned_raw_data definition, there is a left join on !!staging!!.col_name_metadata that could potentially return null values (because it is a left join). The column GSIDB_load is then used in the WHERE clause without accounting for the possibility of nulls. This could potentially exclude rows from the final data set that should be included. Either the join should be an inner join or the WHERE clause should be modified to account for null values (i.e., WHERE GSIDB_load is true OR GSIDB_load IS NULL).\n\nAre all appropriate columns used in each join expression?\n\nYes\n\nDo any inner joins result in the erroneous exclusion of rows because one table has non-matching rows?\n\nNo inner joins are used in the script.\n\nDo any joins result in unintended expansion of rows (e.g., because there is a many-to-many relationship between the tables when the relationship should be one-to-one or one-to-many)?\nAre values in imported data sets tested for completeness, consistency, and uniqueness, as appropriate?\n\nNo, but there are preprocessing steps which have been performed on the data prior to this script being run.\n\nAre there undocumented or implicit assumptions about data or relationships in the code?\n\nThere are quite a few assumptions made about the data in the script(s), which is not necessarily a fault of this script but rather the data that is being loaded. It would be helpful to document these assumptions in the script header or in the README.\n\nAre any hard-coded values correct for the database in use (e.g., analyte codes originally to be used with a different database carried over to the current database)?\n\nNo\n\nIs the logic of AND and OR clauses in WHERE clauses correct?\n\nNone are used in the script.\n\nIs the logic or algebra of calculations correct?\n\nNo calculations are performed in the script.\n\nAre function arguments correct?\n\nYes\n\nAre there any equality comparisons between floating-point numbers when they are not drawn unmodified from the same table column?\n\nNo\n\nAre constant values defined as substitution variables in a configuration section at the head of the script or in a configuration file?\n\nYes\n\nAre library scripts used where appropriate?\n\nYes\n\nAre transactions used where appropriate, and can committing of transactions be easily enabled or disabled?\n\nYes\n\nIs code repetition minimized?\n\nYes\n\nDoes the code provide information about progress and status as it runs?\n\nYes\n\nAre any important actions missing?\n\nNo\n\n\n\nComments\n\nPlease modify the README.qmd file to document inmportant information about the scripts in this repository, their purpose, how to use them, and which order to run them in (i.e., does load_uw_salish_cruises.sql need to be run before load_uw_salish_data.sql? What about the Python script?).\nWhere did the file 0_csv_filepaths.txt come from? Document this in the README.\nWhere did the file 0_xlsx_down_filepaths.txt come from? Document this in the README.\nWhere did the file 0_xlsx_up_filepaths.txt come from? Document this in the README.\nWhere did the file col_name_metadata.csv come from? Document this in the README.\nTo determine which factor to use for the unit umol/kg, we first need to determine what the base unit is for units that share the same dimension (#/M). The base unit will always have a factor of 1. If there are no other units that share the dimension #/M then the factor would be 1. Since there is another unit defined with the dimension #/M (umol/g), then we need to determine the conversion factor between umol/kg and umol/g.\nWe use the following formula to convert units to the base unit:\n\\[\n  (\\text{value} + \\text{addend1}) * \\text{factor} + \\text{addend2} = \\text{value in base unit}\n  \\]\n\nAddend1: This is something you’d add to the “value” before multiplying. In a simple conversion like this, we often don’t need to adjust the original value, so Addend1 is 0.\nFactor: This is the conversion factor between µmol/kg and µmol/g.\nAddend2: This is something you’d add after multiplying. Again, in this case, no extra adjustment is needed, so Addend2 is 0.\nWe can use algebra to solve for the conversion factor.\n\\[\n(1 \\frac{\\text{umol}}{\\text{kg}} + 0) * \\text{factor} + 0 = \\text{value in } \\frac{\\text{umol}}{\\text{g}}\n\\]\nSimplified to:\n\\[\n1 \\frac{\\text{umol}}{\\text{kg}}  * \\text{factor} = \\text{value in } \\frac{\\text{umol}}{\\text{g}}\n\\]\nWe know that 1kg = 1000g:\n\\[\n1 \\frac{\\text{umol}}{\\text{kg}} = \\frac{1\\text{umol}}{1000\\text{g}} = 0.001 \\frac{\\text{umol}}{\\text{g}}\n\\]\nSo we can substitute this in:\n\\[\n1 \\frac{\\text{umol}}{\\text{kg}}  * \\text{factor} = 0.001 \\frac{\\text{umol}}{\\text{g}}\n\\]\nAnd solve for the factor:\n\\[\n1 * \\text{factor} = 0.001\n\\]\n\\[\n\\text{factor} = 0.001\n\\]\nTherefore, the factor for umol/kg is 0.001.\n\nPlease commit your translations to the x_ tables. You can set the load_translations and do_commit flags to Yes in the custom.conf. You also might want to add a line inside the load lookups/load translations code sections that pause the script and ask if you want to continue after the upsert process is complete. See below for an example:\n-- !x! if(!!load_translations!!)\n    -- !x! include ..!!$pathsep!!_translations!!$pathsep!!load_translations.sql\n    -- !x! pause \"Do you want to continue with the loading script?\" continue after 120 seconds\n-- !x! endif\nThere seem to be some unresolved comments in the script (i.e., -- ASK BRANDON/CALEB). These should be resolved before the script is finished.\nA second condition should be added to the import section -- !x! if(!!reload_data!!) that checks to see if the source data tables exist. The script will crash if another user runs the script and has the reload_data variable set to No. The script should check if the table !!staging!!.combined_raw_data exists, since that is ultimately what the import section is trying to create.\nThe cleaning and standardization procedures should be performed every time the script is run because all subsequent code relies on the cleaned data/table. It is currently wrapped in a conditional statement that will only run if the user has the re_clean_data variable set to Yes. The script will crash if another user runs the script and has the re_clean_data variable set to No.\nPostgreSQL interprets all identifiers as lowercase unless they are quoted. It is best practice to use lowercase identifiers and quote them when necessary. This will help with consistency and readability. As an example, the column GSIDB_load should be quoted as \"GSIDB_load\" in the script if you want to keep the capitalization, otherwise it should be changed to lowercase.\nYou might consider adding all of the substitution variables defined at the top of the script into columns of your !!staging!!.cleaned_raw_data table that is used to INSERT data into the GSIDB staging tables. This will allow you to see what these columns look like inside your cleaned intermmediate data table (!!staging!!.cleaned_raw_data) before you insert them into the GSIDB staging tables and it could help you debug any issues that arise when everything is staged in a single table before splitting it out into the GSIDB staging tables. It ultimately doesnt matter which way you do it, but having the substitution variables in the !!staging!!.cleaned_raw_data table will allow you to see what the data looks like before it is inserted into the GSIDB staging tables.\nThe following tables should have a WHERE clause that excludes CTD data. These tables are used for laboratory samples and results.\n\nd_sampsplit\nd_labsample\nd_labresult",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Salish Sea Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-salish-cruises/index.html#translations",
+    "href": "content/data-management/studies/uw-salish-cruises/index.html#translations",
+    "title": "Salish Sea Cruises",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Salish Sea Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-fhl-pef/index.html",
+    "href": "content/data-management/studies/uw-fhl-pef/index.html",
+    "title": "Friday Harbor Labs Pelagic Ecosystem Function",
+    "section": "",
+    "text": "Data Provider: Friday Harbor Labs Pelagic Ecosystem Function (FHLPEF)\nDocument title: University of Washington Friday Harbor Labs Pelagic Ecosystem Function (FHLPEF)\nDocument URL: https://www.nanoos.org/products/san_juan_pef/home.php",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Friday Harbor Labs Pelagic Ecosystem Function"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-fhl-pef/index.html#data-sources",
+    "href": "content/data-management/studies/uw-fhl-pef/index.html#data-sources",
+    "title": "Friday Harbor Labs Pelagic Ecosystem Function",
+    "section": "",
+    "text": "Data Provider: Friday Harbor Labs Pelagic Ecosystem Function (FHLPEF)\nDocument title: University of Washington Friday Harbor Labs Pelagic Ecosystem Function (FHLPEF)\nDocument URL: https://www.nanoos.org/products/san_juan_pef/home.php",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Friday Harbor Labs Pelagic Ecosystem Function"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-fhl-pef/index.html#questions-comments-and-assumptions",
+    "href": "content/data-management/studies/uw-fhl-pef/index.html#questions-comments-and-assumptions",
+    "title": "Friday Harbor Labs Pelagic Ecosystem Function",
+    "section": "Questions, Comments, and Assumptions",
+    "text": "Questions, Comments, and Assumptions\nUnits were only provided for the Phyto data, for Bottle and CTD data units were matched to parameters through the dataset inventory found on the server here: \\\\houston-dc\\Jobs\\6951-6999\\6983 WA Ecology Phyto Indicator for PS\\Data_Inventory\\_University_of_Washington\\FHL_PEF_Data\\_superseded\\SanJuansPEF_dataset_2019_11_18\\SanJuansPEF_dataset_Inventory.xls\nThe following were treated as field sensor CTD data:\n\ndensity\npressure\ncorr_fluorescence\no2\ntemperature\ncorr_o2\ndescent\nconductivity\nsalinity\nfluorescence\n\nThe following were treated as lab bottle data:\n\nphaeo\nsio4\nno2\nnh4\no2\nno3\npo4\nchl\n\nAll other parameters were considered Phytoplankton data.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Friday Harbor Labs Pelagic Ecosystem Function"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-fhl-pef/index.html#translations",
+    "href": "content/data-management/studies/uw-fhl-pef/index.html#translations",
+    "title": "Friday Harbor Labs Pelagic Ecosystem Function",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Friday Harbor Labs Pelagic Ecosystem Function"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/padilla-bay-nerr/index.html",
+    "href": "content/data-management/studies/padilla-bay-nerr/index.html",
+    "title": "Padilla Bay National Estuarine Research Reserve",
+    "section": "",
+    "text": "Data Provider: Padiila Bay National Estuarine Research Reserve (NERR)\nData Files: All CSV data files in the folder: 6983 WA Ecology Phyto Indicator for PS/Data_Inventory/_NERR/342372, plus locations in the file sampling_stations.csv",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Padilla Bay National Estuarine Research Reserve"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/padilla-bay-nerr/index.html#data-source",
+    "href": "content/data-management/studies/padilla-bay-nerr/index.html#data-source",
+    "title": "Padilla Bay National Estuarine Research Reserve",
+    "section": "",
+    "text": "Data Provider: Padiila Bay National Estuarine Research Reserve (NERR)\nData Files: All CSV data files in the folder: 6983 WA Ecology Phyto Indicator for PS/Data_Inventory/_NERR/342372, plus locations in the file sampling_stations.csv",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Padilla Bay National Estuarine Research Reserve"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/padilla-bay-nerr/index.html#comments-and-assumptions",
+    "href": "content/data-management/studies/padilla-bay-nerr/index.html#comments-and-assumptions",
+    "title": "Padilla Bay National Estuarine Research Reserve",
+    "section": "Comments and Assumptions",
+    "text": "Comments and Assumptions\nThe following parameters are defined in the data source README file (6983 WA Ecology Phyto Indicator for PS/Data_Inventory/_NERR/342372/readme.rtf):\n\n\n\n\n\n\n\n\n\nParameter\nDescription\nUnits\nParameter Category\n\n\n\n\ncdepth\ndepth from a non-vented sensor corrected for changes in barometric pressure\nmeters (m)\nwater quality\n\n\nchlfluor\nchlorophyll fluorescence\nmicrograms per Liter (ug/L)\nwater quality\n\n\nclevel\nlevel from a non-vented sensor corrected for changes in barometric pressure\nmeters (m)\nwater quality\n\n\ndepth\nsonde depth\nmeters (m)\nwater quality\n\n\ndo_pct\ndissolved oxygen\npercent saturation (%)\nwater quality\n\n\ndo_mgl\ndissolved oxygen concentration\nmilligrams per Liter (mg/L)\nwater quality\n\n\nlevel\nsonde depth\nmeters (m)\nwater quality\n\n\nturb\nturbidity\nnephelometric turbidity units (NTU)\nwater quality\n\n\nph\npH\nstandard units\nwater quality\n\n\nspcond\nspecific conductivity\nmilli-Siemens per centimeter (mS/cm)\nwater quality\n\n\nsal\nsalinity\nparts per thousand (ppt)\nwater quality\n\n\ntemp\nwater temperature\ndegrees Celsius (C)\nwater quality\n\n\natemp\naverage air temperature\ndegrees Celsius (C)\nmeteorological\n\n\nbp\naverage barometric pressure\nmillibars (mb)\nmeteorological\n\n\nmaxwspd\nmax wind speed\nmeters per second (m/s)\nmeteorological\n\n\nrh\naverage relative humidity\npercent saturation (%)\nmeteorological\n\n\nsdwdir\nwind direction standard deviation\ndegrees\nmeteorological\n\n\ntotpar\ntotal photosynthetically active radiation\nmillimoles per square meter\nmeteorological\n\n\ntotsorad\ntotal solar radiation\nwatts per square meter\nmeteorological\n\n\nwspd\naverage wind speed\nmeters per second (m/s)\nmeteorological\n\n\nwdir\naverage wind direction\ndegrees true North\nmeteorological\n\n\ntotprcp\ntotal precipitation\nmillimeters (mm)\nmeteorological\n\n\nchla_n\nchlorophyll a\nmicrograms per Liter (ug/L)\nbottle\n\n\nnh4f\nammonium\nmilligrams per Liter (mg/L) as N\nbottle\n\n\nno23f\nnitrite + nitrate\nmilligrams per Liter (mg/L) as N\nbottle\n\n\nno2f\nnitrite\nmilligrams per Liter (mg/L) as N\nbottle\n\n\nno3f\nnitrate\nmilligrams per Liter (mg/L) as N\nbottle\n\n\npo4f\northophosphate\nmilligrams per Liter (mg/L) as P\nbottle\n\n\n\n\nThe parameter MaxWSpdT is not loaded to the project database as it conflicts with the *DateTimeStamp** for the measurement.\nAll meterological parameters are excluded from the project database.\nAll NULL or empty string ('') measurement values are excluded from the project database.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Padilla Bay National Estuarine Research Reserve"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/padilla-bay-nerr/index.html#naming-conventions",
+    "href": "content/data-management/studies/padilla-bay-nerr/index.html#naming-conventions",
+    "title": "Padilla Bay National Estuarine Research Reserve",
+    "section": "Naming Conventions",
+    "text": "Naming Conventions\nEnvironmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.\nThe Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.\nIn order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.\n\nLocations\nLocation names in the source data are all converted to uppercase. Additionally, location IDs are created by prepending the location name with the string PadillaBay_. For example, the location name pdbpfmet would be converted to the location ID PadillaBay_PDBPFMET.\n\n\nSamples\nSample names follow the format &lt;STATION&gt;_&lt;DEPTH&gt;_&lt;DATE&gt;. If no depth is provided, the sample name is &lt;STATION&gt;_&lt;DATE&gt;. The &lt;DATE&gt; string is in the format YYYYMMDDHH24MI.\nGenerally speaking, all discrete bottle samples do not have a depth associated with them. Depths are only associated with the CTD samples.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Padilla Bay National Estuarine Research Reserve"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/padilla-bay-nerr/index.html#translations",
+    "href": "content/data-management/studies/padilla-bay-nerr/index.html#translations",
+    "title": "Padilla Bay National Estuarine Research Reserve",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Padilla Bay National Estuarine Research Reserve"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/king-county/index.html",
+    "href": "content/data-management/studies/king-county/index.html",
+    "title": "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan",
+    "section": "",
+    "text": "Data Provider: King County\nDocument title: Marine Phytoplankton Monitoring Program Sampling and Analysis Plan\nDocument URL: https://green2.kingcounty.gov/marine/",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/king-county/index.html#data-source",
+    "href": "content/data-management/studies/king-county/index.html#data-source",
+    "title": "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan",
+    "section": "",
+    "text": "Data Provider: King County\nDocument title: Marine Phytoplankton Monitoring Program Sampling and Analysis Plan\nDocument URL: https://green2.kingcounty.gov/marine/",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/king-county/index.html#comments-and-assumptions",
+    "href": "content/data-management/studies/king-county/index.html#comments-and-assumptions",
+    "title": "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan",
+    "section": "Comments and Assumptions",
+    "text": "Comments and Assumptions\n\nThe Stations.xlsx file was created manually from pages 18 and 21 of the report kcr3135.pdf, which contains location descriptions and coordinates for the onshore and offshore stations which collected CTD and bottle data. Additionally, mooring lat/long coordinates were pulled from each xls file in the Mooring folder.\nCTD data:\n\nAny records with no measurement reading are excluded from the data loading process.\n\nBottle data:\n\nAny records with no measurement reading are excluded from the data loading process.\nQualifiers that contain &lt;MDL are flagged as undetected\nQualifiers that contain J are flagged as estimated\nQualifiers that contain R (excluding RDL) are flagged as rejected\nQualifiers that contain E are flagged as greater than the instruments maximum detection limit\n\nPhytoplankton data:\n\nAny records with no measurement reading are excluded from the data loading process.\n\nThe following parameters are classified as field sensor measurements:\n\nAirPressure\nAirTemp\nChlorophyll\nDensity\nDepth\nDO\nHumidity\nLightIntensity\nLightTrans\nLoggerBatt\nNitrate\npH\nRainfall\nSalinity\nSensorBatt\nSigma Density\nSurfaceLight\nTurbidity\nWaterTemp\nWindDirection\nWindSpeed\n\nAll other measurements are considered lab measurements.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/king-county/index.html#naming-conventions",
+    "href": "content/data-management/studies/king-county/index.html#naming-conventions",
+    "title": "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan",
+    "section": "Naming Conventions",
+    "text": "Naming Conventions\nEnvironmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.\nThe Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.\nIn order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.\n\nSamples\nThese conventions have been adopted to ensure that each sample is uniquely identified.\n\nCTD\nSample names are constructed using the following convention: &lt;locator&gt;_&lt;YYYYMMDDHH24MISS&gt;_&lt;depth&gt;_&lt;updown&gt;.\n\n\n\nMooring\nSample names are constructed using the following convention: &lt;locator&gt;_&lt;YYYYMMDDHH24MISS&gt;.\n\n\nLab/Bottle\nSample names are constructed using the following convention:\n\nWhen a sample depth is provided: &lt;locator&gt;_&lt;YYYYMMDDHH24MISS&gt;_&lt;depth&gt;_Up.\nWhen a sample depth is not provided: &lt;locator&gt;_&lt;YYYYMMDDHH24MISS&gt;_Up.\n\n\n\nPhytoplankton\nSample names are constructed using the following convention: &lt;locator&gt;_&lt;YYYYMMDD&gt;.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/king-county/index.html#translations",
+    "href": "content/data-management/studies/king-county/index.html#translations",
+    "title": "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Marine Phytoplankton Monitoring Program Sampling and Analysis Plan"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/dfo-canada/index.html",
+    "href": "content/data-management/studies/dfo-canada/index.html",
+    "title": "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019",
+    "section": "",
+    "text": "Data Provider: Department of Fisheries and Oceans Canada\nDocument title: Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019\nDocument URL: https://www.sciencedirect.com/science/article/pii/S0079661123001519?via%3Dihub#t0025\nSupplemental data: 1-s2.0-S0079661123001519-mmc2.xlsx",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/dfo-canada/index.html#data-source",
+    "href": "content/data-management/studies/dfo-canada/index.html#data-source",
+    "title": "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019",
+    "section": "",
+    "text": "Data Provider: Department of Fisheries and Oceans Canada\nDocument title: Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019\nDocument URL: https://www.sciencedirect.com/science/article/pii/S0079661123001519?via%3Dihub#t0025\nSupplemental data: 1-s2.0-S0079661123001519-mmc2.xlsx",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/dfo-canada/index.html#comments-and-assumptions",
+    "href": "content/data-management/studies/dfo-canada/index.html#comments-and-assumptions",
+    "title": "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019",
+    "section": "Comments and Assumptions",
+    "text": "Comments and Assumptions\n\nSample stations are collocated with varying coordinates. An average of the latitude and longitude values is used per station to determine an authoritative location. Collected station coordinates are also retained as a sample collection attribute.\nThe following parameters are classified as field sensor measurements:\n\nPressure\nTemperature\nSalinity\nMixed Layer Depth (mld_bvfnosmooth)\nBuoyancy Frequency (bvf_nosmooth)\nChlorophyll\n\nAll other measurements are considered lab measurements.\nField measurements are assumed to be collected during downcasts and discrete samples are assumed to be collected during upcasts.\nThe “Dominant species” parameter is not loaded into the database.\nUTC timestamps are converted to PST.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/dfo-canada/index.html#naming-conventions",
+    "href": "content/data-management/studies/dfo-canada/index.html#naming-conventions",
+    "title": "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019",
+    "section": "Naming Conventions",
+    "text": "Naming Conventions\nEnvironmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.\nThe Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.\nIn order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.\n\nSamples\nSample names are constructed using the following convention: &lt;cruise&gt;_&lt;station&gt;_&lt;samplenum&gt;_&lt;upcast/downcast&gt;_YYYYMMDDHH24MI. This convention is used to ensure that each sample is uniquely identified.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/dfo-canada/index.html#translations",
+    "href": "content/data-management/studies/dfo-canada/index.html#translations",
+    "title": "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019"
+    ]
+  },
+  {
+    "objectID": "content/data-management/index.html",
+    "href": "content/data-management/index.html",
+    "title": "Data Management",
+    "section": "",
+    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "crumbs": [
+      "Data Management"
+    ]
+  },
+  {
+    "objectID": "content/data-management/index.html#overview",
+    "href": "content/data-management/index.html#overview",
+    "title": "Data Management",
+    "section": "",
+    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "crumbs": [
+      "Data Management"
+    ]
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "This project is the second phase (Phase 2) of a three-phase process to work with the scientific and monitoring community to develop a phytoplankton-based Vital Sign (VS) indicator for Puget Sound. Phase 1, funded by the Puget Sound Partnership Monitoring to Accelerate Recovery award in 2021-2023, under IAA 2022-62 laid the foundation for developing a phytoplankton and primary productivity related VS. The purpose of Phase 2 is to conduct analyses in support of developing a phytoplankton-based Vital Sign indicator. We will analyze the inventory of Puget Sound data established as part of Phase 1. The analysis will identify spatial and temporal patterns and trends in phytoplankton community metrics, reveal data gaps, and explore opportunities for application of emergent data collection methods. Summary statistics will be calculated and visualized. Preliminary analyses will inform decisions regarding optimal formats for organization and compilation of the phytoplankton-based monitoring data. The project will produce a final technical report which will provide an overview of recommendations for the indicator, next steps for indicator development, recommendations for parties responsible for indicator reporting, frequency of indicator updates, resources necessary to support the indicator, and suggestions for additional monitoring beyond currently available data. Ultimately, this project will provide the statistical analyses and technical guidance for Phase 3 and the future development of a finalized indicator status and trends reporting plan and QAPP for a phytoplankton-based Vital Sign in Puget Sound."
+  },
+  {
+    "objectID": "about.html#purpose",
+    "href": "about.html#purpose",
+    "title": "About",
+    "section": "",
+    "text": "This project is the second phase (Phase 2) of a three-phase process to work with the scientific and monitoring community to develop a phytoplankton-based Vital Sign (VS) indicator for Puget Sound. Phase 1, funded by the Puget Sound Partnership Monitoring to Accelerate Recovery award in 2021-2023, under IAA 2022-62 laid the foundation for developing a phytoplankton and primary productivity related VS. The purpose of Phase 2 is to conduct analyses in support of developing a phytoplankton-based Vital Sign indicator. We will analyze the inventory of Puget Sound data established as part of Phase 1. The analysis will identify spatial and temporal patterns and trends in phytoplankton community metrics, reveal data gaps, and explore opportunities for application of emergent data collection methods. Summary statistics will be calculated and visualized. Preliminary analyses will inform decisions regarding optimal formats for organization and compilation of the phytoplankton-based monitoring data. The project will produce a final technical report which will provide an overview of recommendations for the indicator, next steps for indicator development, recommendations for parties responsible for indicator reporting, frequency of indicator updates, resources necessary to support the indicator, and suggestions for additional monitoring beyond currently available data. Ultimately, this project will provide the statistical analyses and technical guidance for Phase 3 and the future development of a finalized indicator status and trends reporting plan and QAPP for a phytoplankton-based Vital Sign in Puget Sound."
+  },
+  {
+    "objectID": "about.html#goals",
+    "href": "about.html#goals",
+    "title": "About",
+    "section": "Goals",
+    "text": "Goals\n\nCompile the phytoplankton-related data identified in Phase 1 of the Phytoplankton Vital Sign project into a Phytoplankton Data Inventory, which summarizes types of data collected by Puget Sound phytoplankton monitoring programs.\nAssemble a summary of methods used across these programs for collecting phytoplankton-related data in Puget Sound.\nIncorporate relevant sources of data from the Phytoplankton Data Inventory into a Phytoplankton Monitoring Database.\nConduct statistical analyses of the Phytoplankton Monitoring Database data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify data gaps.\nExplore and summarize opportunities for application of emergent data collection methods that may be used to supplement existing phytoplankton monitoring programs in Puget Sound.\nProvide recommendations and guidance for Vital Sign metrics and/or indicators to be used to develop an indicator status and trends reporting plan and Quality Assurance Project Plan (QAPP) (Phase 3), curated in the form of a final technical report."
+  },
+  {
+    "objectID": "about.html#funding",
+    "href": "about.html#funding",
+    "title": "About",
+    "section": "Funding",
+    "text": "Funding"
+  },
+  {
+    "objectID": "about.html#team",
+    "href": "about.html#team",
+    "title": "About",
+    "section": "Team",
+    "text": "Team"
   },
   {
     "objectID": "content/analysis/index.html",
@@ -302,23 +704,239 @@
     ]
   },
   {
-    "objectID": "content/data-management/index.html",
-    "href": "content/data-management/index.html",
-    "title": "Data Management",
+    "objectID": "content/data-management/parquet-export.html",
+    "href": "content/data-management/parquet-export.html",
+    "title": "Data Export",
     "section": "",
-    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "text": "This page includes Python code used to export data from the project database to Parquet datasets. There are four datasets: bottle, mooring, ctd, and species abundance. Each dataset is exported to a separate directory inside a data folder. Within each dataset folder, parquet files are partitioned by provider and year.",
     "crumbs": [
-      "Data Management"
+      "Data Management",
+      "Data Export"
     ]
   },
   {
-    "objectID": "content/data-management/index.html#overview",
-    "href": "content/data-management/index.html#overview",
-    "title": "Data Management",
-    "section": "",
-    "text": "The Phytoplankton VS project team, led by the GSI Environmental, has built a phytoplankton monitoring database, comprising all of the discrete and continuous monitoring data related to phytoplankton and Puget Sound that has been submitted to the project team. To date, this database has over 50 million records and continues to grow. The database includes phytoplankton metrics, as well as additional paired data (e.g. water quality parameters). These ancillary data are being retained and curated for future analyses beyond the Vital Sign project. The database also Includes QA/QC procedures and metadata where available, which can be added as an attribute to any given study or discrete dataset. The database includes multiple types and categories of data, with 16 regional data providers and over 40 independent datasets.",
+    "objectID": "content/data-management/parquet-export.html#python-setup",
+    "href": "content/data-management/parquet-export.html#python-setup",
+    "title": "Data Export",
+    "section": "Python Setup",
+    "text": "Python Setup\n\nInstall Python version 3.10, 3.11, or 3.12.\nInstall required dependencies: python -m pip install numexpr psycopg2-binary pyarrow python-dotenv tqdm polars\nCreate a .env file in the same directory as this notebook with the following keys:\nPG_HOST=\nPG_DATABASE=\nPG_USER=\nPG_PASSWORD=",
     "crumbs": [
-      "Data Management"
+      "Data Management",
+      "Data Export"
+    ]
+  },
+  {
+    "objectID": "content/data-management/parquet-export.html#export-code",
+    "href": "content/data-management/parquet-export.html#export-code",
+    "title": "Data Export",
+    "section": "Export Code",
+    "text": "Export Code\n#!/usr/bin/env python\n\n# Standard libraries\nimport argparse\nimport logging\nimport os\nimport shutil\nimport tarfile\nfrom datetime import datetime\nfrom pathlib import Path\n\n# Third party libraries\nimport numexpr as ne\nimport psycopg2\nimport pyarrow as pa\nimport pyarrow.parquet as pq\nfrom dotenv import load_dotenv\nfrom psycopg2.extras import RealDictCursor\nfrom tqdm import tqdm\n\nload_dotenv()\n\nlogging.basicConfig(\n    level=logging.INFO, format=\"%(asctime)s %(message)s\", datefmt=\"[%Y-%m-%d %H:%M:%S]\"\n)\nlogger = logging.getLogger(__name__)\n\n# Sets the maximum number of threads that numexpr can use (pyarrow uses numexpr)\n# to 80% of the number of cores on the machine.\nne.numexpr_max_threads = int(ne.detect_number_of_cores() * 0.8)\n\n# Number of rows to process at a time.\nBATCH_SIZE = 50_000\n\n# Column names to partition data by.\n# The partitioned dataset will be organized into\n# folders based on values of the partitioning column.\n#\n#   ./output\n#   ├── provider=King County\n#   ├── ...\n#   └── provider=Washington Department of Ecology\nPARTITION_COLS = [\"provider_key\", \"year\"]\n\n# Directory to store the parquet datasets in.\n# Each SQL file in the SQL_DIR will contain its own\n# dataset within the OUTDIR folder.\nOUTDIR = Path(\"data\")\nif OUTDIR.exists() and OUTDIR.is_dir():\n    shutil.rmtree(OUTDIR)\nOUTDIR.mkdir(parents=True, exist_ok=True)\n\nGZ_TARFILE = Path(OUTDIR.name + \".tar.gz\")\nif GZ_TARFILE.exists():\n    GZ_TARFILE.unlink()\n\n# PostgreSQL connection details\nif \"PG_HOST\" not in os.environ:\n    raise ValueError(\"Environment variable PG_HOST is not set\")\nPG_HOST = os.getenv(\"PG_HOST\")\nif \"PG_DATABASE\" not in os.environ:\n    raise ValueError(\"Environment variable PG_DATABASE is not set\")\nPG_DATABASE = os.getenv(\"PG_DATABASE\")\nif \"PG_USER\" not in os.environ:\n    raise ValueError(\"Environment variable PG_USER is not set\")\nPG_USER = os.getenv(\"PG_USER\")\nif \"PG_PASSWORD\" not in os.environ:\n    raise ValueError(\"Environment variable PG_PASSWORD is not set\")\nPG_PASSWORD = os.getenv(\"PG_PASSWORD\")\n\n\ndef clparser():\n    parser = argparse.ArgumentParser(\n        description=\"Export data from PostgreSQL to Parquet files\"\n    )\n    parser.add_argument(\n        \"dataset\",\n        type=str,\n        choices=[\"bottle\", \"mooring\", \"ctd\", \"all\"],\n        help=\"Dataset to export\",\n    )\n    return parser\n\n\ndef postgres_to_parquet(dataset_name: str, sql: str, schema: list) -&gt; None:\n    dataset_dir = OUTDIR / dataset_name\n    logger.info(f\"Processing data for {dataset_dir}\")\n\n    # Create the dataset directory\n    if dataset_dir.exists() and dataset_dir.is_dir():\n        shutil.rmtree(dataset_dir)\n    dataset_dir.mkdir(parents=True, exist_ok=True)\n\n    metadata = {\n        \"dataset_name\": dataset_name,\n        \"author\": \"GSI Environmental Inc.\",\n        \"created_at\": datetime.now().isoformat(),\n    }\n    schema_with_metadata = schema.with_metadata(\n        {k: str(v).encode(\"utf-8\") for k, v in metadata.items()}\n    )\n    metadata_collector = []\n\n    with conn.cursor(\n        name=\"phyto_db_large_export\", cursor_factory=RealDictCursor\n    ) as cursor:\n        logger.info(\"Querying database...\")\n        cursor.execute(\n            f\"\"\"\n            SELECT\n                *,\n                replace(provider, ' ', '_') as provider_key,\n                extract(year from sample_date)::integer as year\n            FROM (\n                {sql}\n            ) as subquery\n            WHERE\n                extract(year from sample_date) &gt;= 1999\n        \"\"\"\n        )\n        logger.info(f\"Writing results to parquet in {dataset_dir}\")\n        with tqdm(desc=\"Processing batches\", unit=\" batch\") as pbar:\n            while True:\n                # Fetch a batch of rows\n                rows = cursor.fetchmany(BATCH_SIZE)\n                if not rows:\n                    break\n                # Convert fetched rows (list of dictionaries) to a pyarrow Table\n                # Convert dictionary rows to columns (pyarrow expects columns)\n                # batch_dict = {key: [row[key] for row in rows] for key in rows[0]}\n                # Ensure all keys exist in each batch to match the schema\n                batch_dict = {\n                    key: [row.get(key, None) for row in rows] for key in schema.names\n                }\n\n                table = pa.Table.from_pydict(batch_dict, schema=schema_with_metadata)\n                # Write Arrow Table to Parquet file (as part of a dataset)\n                pq.write_to_dataset(\n                    table=table,\n                    root_path=dataset_dir,\n                    compression=\"snappy\",\n                    partition_cols=PARTITION_COLS,\n                    use_threads=True,\n                    metadata_collector=metadata_collector,\n                )\n                pbar.update(1)\n\n            # Remove the partition columns from the schema\n            # so we can write the metadata file\n            for _ in range(len(PARTITION_COLS)):\n                schema = schema.remove(len(schema) - 1)\n\n            for key, value in metadata.items():\n                metadata_collector[0].metadata[key] = str(value).encode(\"utf-8\")\n\n            # Write combined metadata file\n            pq.write_metadata(\n                schema=schema.with_metadata(\n                    {k: str(v).encode(\"utf-8\") for k, v in metadata.items()}\n                ),\n                where=f\"{dataset_dir}/_metadata\",\n                metadata_collector=metadata_collector,\n            )\n            logger.info(f\"Metadata written to {dataset_dir / '_metadata'}\")\n\n    logger.info(\"Dataset export complete\")\n    meta = pq.read_metadata(dataset_dir / \"_metadata\")\n    ds = pq.ParquetDataset(dataset_dir)\n    logger.info(f\"  num_files      : {len(ds.files)}\")\n    logger.info(f\"  format_version : {meta.format_version}\")\n    logger.info(f\"  num_columns     : {meta.num_columns}\")\n    logger.info(f\"  num_row_groups : {meta.num_row_groups}\")\n    logger.info(f\"  num_rows       : {meta.num_rows}\")\n\n    for key, value in meta.metadata.items():\n        if \"schema\" not in key.decode(\"utf-8\"):\n            logger.info(f\"  {str(key.decode('utf-8')):&lt;15}: {value.decode('utf-8')}\")\n\n\ndef mooring_export():\n    dataset_name = \"Mooring\"\n    schema = pa.schema(\n        [\n            (\"area_id\", pa.string()),\n            (\"location_id\", pa.string()),\n            (\"loc_desc\", pa.string()),\n            (\"loc_type\", pa.string()),\n            (\"x_coord\", pa.float64()),\n            (\"y_coord\", pa.float64()),\n            (\"srid\", pa.int64()),\n            (\"coord_sys\", pa.string()),\n            (\"loc_method\", pa.string()),\n            (\"provider\", pa.string()),\n            (\"study_id\", pa.string()),\n            (\"study_name\", pa.string()),\n            (\"study_loc_id\", pa.string()),\n            (\"sample_doc\", pa.string()),\n            (\"sample_date\", pa.timestamp(\"us\")),\n            (\"coll_scheme\", pa.string()),\n            (\"sample_material\", pa.string()),\n            (\"sample_id\", pa.string()),\n            (\"sample_desc\", pa.string()),\n            (\"upper_depth\", pa.float64()),\n            (\"lower_depth\", pa.float64()),\n            (\"depth_units\", pa.string()),\n            (\"comments\", pa.string()),\n            (\"parameter\", pa.string()),\n            (\"meas_method\", pa.string()),\n            (\"replicate\", pa.string()),\n            (\"result\", pa.float64()),\n            (\"units\", pa.string()),\n            (\"detected\", pa.string()),\n            (\"qualifiers\", pa.string()),\n            (\"validator_flags\", pa.string()),\n            (\"qa_level\", pa.string()),\n            (\"data_quality\", pa.string()),\n            (\"provider_key\", pa.string()),\n            (\"year\", pa.int32()),\n        ]\n    )\n\n    sql = \"\"\"\n        SELECT\n            *\n        FROM app.mooring\n        WHERE\n            parameter in (\n                'Turbidity',\n                'Chlorophyll',\n                'ChlorophyllFluor',\n                'ChloroFluor_adj',\n                'Fluorescence_adj',\n                'BeamTransmission'\n            )\n    \"\"\"\n\n    postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)\n\n\ndef ctd_export():\n    dataset_name = \"CTD\"\n    schema = pa.schema(\n        [\n            (\"area_id\", pa.string()),\n            (\"location_id\", pa.string()),\n            (\"loc_desc\", pa.string()),\n            (\"loc_type\", pa.string()),\n            (\"x_coord\", pa.float64()),\n            (\"y_coord\", pa.float64()),\n            (\"srid\", pa.int64()),\n            (\"coord_sys\", pa.string()),\n            (\"loc_method\", pa.string()),\n            (\"provider\", pa.string()),\n            (\"study_id\", pa.string()),\n            (\"study_name\", pa.string()),\n            (\"study_loc_id\", pa.string()),\n            (\"sample_doc\", pa.string()),\n            (\"sample_date\", pa.timestamp(\"us\")),\n            (\"coll_scheme\", pa.string()),\n            (\"sample_material\", pa.string()),\n            (\"sample_id\", pa.string()),\n            (\"sample_desc\", pa.string()),\n            (\"upper_depth\", pa.float64()),\n            (\"lower_depth\", pa.float64()),\n            (\"depth_units\", pa.string()),\n            (\"comments\", pa.string()),\n            (\"parameter\", pa.string()),\n            (\"meas_method\", pa.string()),\n            (\"replicate\", pa.string()),\n            (\"result\", pa.float64()),\n            (\"units\", pa.string()),\n            (\"detected\", pa.string()),\n            (\"qualifiers\", pa.string()),\n            (\"validator_flags\", pa.string()),\n            (\"qa_level\", pa.string()),\n            (\"data_quality\", pa.string()),\n            (\"provider_key\", pa.string()),\n            (\"year\", pa.int32()),\n        ]\n    )\n\n    sql = \"\"\"\n        SELECT\n            *\n        FROM app.ctd\n        WHERE\n            parameter in (\n                'Turbidity',\n                'Chlorophyll',\n                'ChlorophyllFluor',\n                'ChloroFluor_adj',\n                'Fluorescence_adj',\n                'BeamTransmission'\n            )\n    \"\"\"\n\n    postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)\n\n\ndef bottle_export():\n    dataset_name = \"Bottle\"\n    schema = pa.schema(\n        [\n            (\"area_id\", pa.string()),\n            (\"location_id\", pa.string()),\n            (\"loc_desc\", pa.string()),\n            (\"loc_type\", pa.string()),\n            (\"loc_geom\", pa.string()),\n            (\"x_coord\", pa.float64()),\n            (\"y_coord\", pa.float64()),\n            (\"srid\", pa.int64()),\n            (\"coord_sys\", pa.string()),\n            (\"loc_method\", pa.string()),\n            (\"provider\", pa.string()),\n            (\"study_id\", pa.string()),\n            (\"study_name\", pa.string()),\n            (\"sample_doc\", pa.string()),\n            (\"sample_date\", pa.timestamp(\"us\")),\n            (\"coll_scheme\", pa.string()),\n            (\"sample_material\", pa.string()),\n            (\"sample_id\", pa.string()),\n            (\"sample_desc\", pa.string()),\n            (\"original_sample_id\", pa.string()),\n            (\"upper_depth\", pa.float64()),\n            (\"lower_depth\", pa.float64()),\n            (\"depth_units\", pa.string()),\n            (\"split_type\", pa.string()),\n            (\"sample_no\", pa.string()),\n            (\"lab\", pa.string()),\n            (\"lab_pkg\", pa.string()),\n            (\"material\", pa.string()),\n            (\"material_analyzed\", pa.string()),\n            (\"labsample\", pa.string()),\n            (\"lab_rep\", pa.string()),\n            (\"method_code\", pa.string()),\n            (\"method_desc\", pa.string()),\n            (\"chem_class\", pa.string()),\n            (\"cas_rn\", pa.string()),\n            (\"analyte\", pa.string()),\n            (\"analyte_name\", pa.string()),\n            (\"result\", pa.float64()),\n            (\"qualifiers\", pa.string()),\n            (\"lab_flags\", pa.string()),\n            (\"validator_flags\", pa.string()),\n            (\"detected\", pa.string()),\n            (\"detection_limit\", pa.float64()),\n            (\"quantification_limit\", pa.float64()),\n            (\"reporting_limit\", pa.float64()),\n            (\"units\", pa.string()),\n            (\"meas_basis\", pa.string()),\n            (\"fraction\", pa.string()),\n            (\"dilution_factor\", pa.float64()),\n            (\"data_quality\", pa.string()),\n            (\"qa_level\", pa.string()),\n            (\"date_analyzed\", pa.timestamp(\"us\")),\n            (\"date_extracted\", pa.timestamp(\"us\")),\n            (\"doc_file\", pa.string()),\n            (\"comments\", pa.string()),\n            (\"provider_key\", pa.string()),\n            (\"year\", pa.int32()),\n        ]\n    )\n\n    dataset_name = \"Bottle\"\n\n    sql = \"\"\"\n        SELECT\n            *\n        FROM app.bottle\n        WHERE\n            analyte in (\n                'Turbidity',\n                'ChlorophyllA',\n                'Chlorophyll',\n                'Chlorophyll_Avg',\n                'BeamTransmission'\n            )\n    \"\"\"\n\n    postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)\n\n\ndef main():\n    args = clparser().parse_args()\n    _bottle_export = False\n    _mooring_export = False\n    _ctd_export = False\n    if args.dataset == \"bottle\" or args.dataset == \"all\":\n        _bottle_export = True\n    if args.dataset == \"mooring\" or args.dataset == \"all\":\n        _mooring_export = True\n    if args.dataset == \"ctd\" or args.dataset == \"all\":\n        _ctd_export = True\n\n    logger.info(\"Starting export...\")\n    logger.info(f\"Bottle Export  : {_bottle_export}\")\n    logger.info(f\"Mooring Export : {_mooring_export}\")\n    logger.info(f\"CTD Export     : {_ctd_export}\")\n\n    if _bottle_export:\n        bottle_export()\n    if _mooring_export:\n        mooring_export()\n    if _ctd_export:\n        ctd_export()\n\n    logger.info(f\"Compressing output directory to {GZ_TARFILE}...\")\n    with tarfile.open(GZ_TARFILE, \"w:gz\") as tar:\n        tar.add(OUTDIR, arcname=OUTDIR.name)\n\n    # Get the size of the tar.gz file\n    tar_gz_size = GZ_TARFILE.stat().st_size\n\n    logger.info(f\"Size of {GZ_TARFILE}: {tar_gz_size} bytes\")\n    tar_gz_size_kb = tar_gz_size / 1000\n    logger.info(f\"Size of {GZ_TARFILE}: {tar_gz_size_kb} KB\")\n    tar_gz_size_mb = tar_gz_size_kb / 1000\n    logger.info(f\"Size of {GZ_TARFILE}: {tar_gz_size_mb} MB\")\n    tar_gz_size_gb = tar_gz_size_mb / 1000\n    logger.info(f\"Size of {GZ_TARFILE}: {tar_gz_size_gb} GB\")\n    tar_gz_size_tb = tar_gz_size_gb / 1000\n    logger.info(f\"Size of {GZ_TARFILE}: {tar_gz_size_tb} TB\")\n\n\nif __name__ == \"__main__\":\n    try:\n        conn = psycopg2.connect(\n            host=PG_HOST, database=PG_DATABASE, user=PG_USER, password=PG_PASSWORD\n        )\n    except Exception as err:\n        raise err\n\n    try:\n        main()\n    except Exception as err:\n        raise err\n    finally:\n        conn.close()",
+    "crumbs": [
+      "Data Management",
+      "Data Export"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/index.html",
+    "href": "content/data-management/studies/index.html",
+    "title": "Data Handling & QA/QC",
+    "section": "",
+    "text": "Data handling and QA/QC procedures are described in the pages listed below. Each page includes:\n\nAn overview of the study and links to the original data source (if available).\nA description of the data sources provided.\nAny preprocessing steps taken to prepare the data for loading into the project database.\nComments and assumptions about the data.\nNaming conventions used in the database.\nAny code translations applied to the data.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    \n      \n      \n    \n\n\n\n\n\nProvider\n\n\nStudy Name\n\n\n\n\n\n\nUniversity of Washington\n\n\nFriday Harbor Labs Pelagic Ecosystem Function\n\n\n\n\nUniversity of Washington\n\n\nHood Canal Dissolved Oxygen Program\n\n\n\n\nKing County\n\n\nMarine Phytoplankton Monitoring Program Sampling and Analysis Plan\n\n\n\n\nOcean Research College Academy\n\n\nOcean Research College Academy\n\n\n\n\nStillaguamish Tribe of Indians\n\n\nPStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data\n\n\n\n\nPadilla Bay National Estuarine Research Reserve\n\n\nPadilla Bay National Estuarine Research Reserve\n\n\n\n\nUniversity of Washington\n\n\nSalish Sea Cruises\n\n\n\n\nDepartment of Fisheries and Oceans Canada\n\n\nSeasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019\n\n\n\n\nUniversity of Washington\n\n\nWOAC Cruises\n\n\n\n\nWashington State Department of Ecology\n\n\nWashington Department of Ecology Long-term Marine Water & Sediment Data\n\n\n\n\n\nNo matching items",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/orca/index.html",
+    "href": "content/data-management/studies/orca/index.html",
+    "title": "Ocean Research College Academy",
+    "section": "",
+    "text": "Data Provider: Ocean Research College Academy\nData Files:\n\nMARINA_10.22.21 to 3.12.24_for PB.csv\nMBT_11.22.22 to 2.27.24_for PB.csv",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Ocean Research College Academy"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/orca/index.html#data-source",
+    "href": "content/data-management/studies/orca/index.html#data-source",
+    "title": "Ocean Research College Academy",
+    "section": "",
+    "text": "Data Provider: Ocean Research College Academy\nData Files:\n\nMARINA_10.22.21 to 3.12.24_for PB.csv\nMBT_11.22.22 to 2.27.24_for PB.csv",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Ocean Research College Academy"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/orca/index.html#comments-and-assumptions",
+    "href": "content/data-management/studies/orca/index.html#comments-and-assumptions",
+    "title": "Ocean Research College Academy",
+    "section": "Comments and Assumptions",
+    "text": "Comments and Assumptions\n\nRecords where pass is False, indicating the sensor did not pass calibration, are flagged as Rejected in the database.\nSalinity units are reported as ppt. It is unclear if this translates to parts per trillion or parts per thousand. Currently, the units are assumed to be parts per trillion, and are therefore translated to a less ambiguous unit of ng/L.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Ocean Research College Academy"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/orca/index.html#naming-conventions",
+    "href": "content/data-management/studies/orca/index.html#naming-conventions",
+    "title": "Ocean Research College Academy",
+    "section": "Naming Conventions",
+    "text": "Naming Conventions\nEnvironmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.\nThe Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.\nIn order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.\n\nLocations\nLocation names are created from the first part of the source file name. For example, the location name for the file MARINA_10.22.21 to 3.12.24_for PB.csv would be MARINA.\n\n\nSamples\nSample names follow the format &lt;STATION&gt;_&lt;DEPTH&gt;_&lt;DATE&gt;. The &lt;DATE&gt; string is in the format YYYYMMDDHH24MISS. For example, a sample taken at station MARINA, at a depth of 5m, on 2022-10-22 12:01:00 would be named MARINA_5.0_20221022120100.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Ocean Research College Academy"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/orca/index.html#translations",
+    "href": "content/data-management/studies/orca/index.html#translations",
+    "title": "Ocean Research College Academy",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Ocean Research College Academy"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/stillaguamish-tribe/index.html",
+    "href": "content/data-management/studies/stillaguamish-tribe/index.html",
+    "title": "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data",
+    "section": "",
+    "text": "Data Provider: Stillaguamish Tribe of Indians\nData Files:\n\nPort Susan Prelim WQ Data 2011-2024 PSEMP PHYTO DB.xlsx (Mooring)\nPSP1_Prelim_Profile_Data_Running PSEMP PHYTO DB.xlsx (Profile)\nPSP5_PrelimData_Running for PhytoDB.csv (Profile)\nPort Susan Non-Kayak Pt Phytoplankton Observation Summaries.xlsx (Phytoplankton)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/stillaguamish-tribe/index.html#data-sources",
+    "href": "content/data-management/studies/stillaguamish-tribe/index.html#data-sources",
+    "title": "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data",
+    "section": "",
+    "text": "Data Provider: Stillaguamish Tribe of Indians\nData Files:\n\nPort Susan Prelim WQ Data 2011-2024 PSEMP PHYTO DB.xlsx (Mooring)\nPSP1_Prelim_Profile_Data_Running PSEMP PHYTO DB.xlsx (Profile)\nPSP5_PrelimData_Running for PhytoDB.csv (Profile)\nPort Susan Non-Kayak Pt Phytoplankton Observation Summaries.xlsx (Phytoplankton)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/stillaguamish-tribe/index.html#comments-and-assumptions",
+    "href": "content/data-management/studies/stillaguamish-tribe/index.html#comments-and-assumptions",
+    "title": "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data",
+    "section": "Comments and Assumptions",
+    "text": "Comments and Assumptions\n\nPort Susan Non-Kayak Pt Phytoplankton Observation Summaries.xlsx\nNo outstanding questions or comments.\n\n\nPort Susan Prelim WQ Data 2011-2024 PSEMP PHYTO DB.xlsx\n\nChlorophyll records with a value of 999.99 are excluded from the data loading process. The meta tab of this file indicates that these records indicate a reading outside the range of the instrument.\nThe following parameters have been excluded from the data loading process:\n\nWiper Position volt\nVertical Position m\nCable Pwr V\nBattery V\n\nCoordinates provided in the meta tab of this file indicate the mooring location is identical to the location provided in the meta tab of the PSP1_Prelim_Profile_Data_Running PSEMP PHYTO DB.xlsx file. The location PSP1 is being used for the location ID in the database, with a loc_type value of Mooring.\n\n\n\nPSP5_PrelimData_Running for PhytoDB.csv\nNo outstanding questions or comments.\n\n\nPSP1_Prelim_Profile_Data_Running PSEMP PHYTO DB.xlsx\nNo outstanding questions or comments.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/stillaguamish-tribe/index.html#naming-conventions",
+    "href": "content/data-management/studies/stillaguamish-tribe/index.html#naming-conventions",
+    "title": "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data",
+    "section": "Naming Conventions",
+    "text": "Naming Conventions\nEnvironmental data are collected to represent, or model, real-world conditions. These conditions ordinarily include entities such as the locations sampled, the samples collected, and the measurements made on those samples. There are many-to-one relationships between entities like these. For example, there may be many samples at each location, and many measurements made on each sample.\nThe Phytoplankton Indicator database utilizes natural keys to define unique entities. A natural key is a unique identifier for an entity that is based on the data itself. For example, a sample may be uniquely identified by the combination of the cruise, station, sample number, and upcast/downcast.\nIn order to maintain the integrity of the data, database keys may be defined on a dataset by dataset basis based on the attributes provided. The following sections define any naming conventions used in this dataset.\n\nLocations\nLocation IDs are created by prepending the location name with the string Stillaguamish_. For example, the location name PSP1 would be converted to the location ID Stillaguamish_PSP1.\n\n\nSamples\nSample names follow the format &lt;STATION&gt;_&lt;DEPTH&gt;_&lt;DATE&gt;. If no depth is provided, the sample name is &lt;STATION&gt;_&lt;DATE&gt;. The &lt;DATE&gt; string is in the format YYYYMMDDHH24MI.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/stillaguamish-tribe/index.html#translations",
+    "href": "content/data-management/studies/stillaguamish-tribe/index.html#translations",
+    "title": "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-hcdop/index.html",
+    "href": "content/data-management/studies/uw-hcdop/index.html",
+    "title": "Hood Canal Dissolved Oxygen Program",
+    "section": "",
+    "text": "Data Provider: Hood Canal Dissolved Oxygen Program (HCDOP)\nDocument title: University of Washington Hood Canal Dissolved Oxygen Program (HCDOP)\nDocument URL: http://www.hoodcanal.washington.edu/\n\nA Readme pdf was provided with the 9 years of data with the following filename ‘HCDOP_Data_README.pdf’. This file laid out the dataset structure (2 files per year from 2003 to 2011) and a brief data dictionary, including the units for each measurement. All of the files were in the same format across the 9 years.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Hood Canal Dissolved Oxygen Program"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-hcdop/index.html#data-sources",
+    "href": "content/data-management/studies/uw-hcdop/index.html#data-sources",
+    "title": "Hood Canal Dissolved Oxygen Program",
+    "section": "",
+    "text": "Data Provider: Hood Canal Dissolved Oxygen Program (HCDOP)\nDocument title: University of Washington Hood Canal Dissolved Oxygen Program (HCDOP)\nDocument URL: http://www.hoodcanal.washington.edu/\n\nA Readme pdf was provided with the 9 years of data with the following filename ‘HCDOP_Data_README.pdf’. This file laid out the dataset structure (2 files per year from 2003 to 2011) and a brief data dictionary, including the units for each measurement. All of the files were in the same format across the 9 years.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Hood Canal Dissolved Oxygen Program"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-hcdop/index.html#questions-comments-and-assumptions",
+    "href": "content/data-management/studies/uw-hcdop/index.html#questions-comments-and-assumptions",
+    "title": "Hood Canal Dissolved Oxygen Program",
+    "section": "Questions, Comments, and Assumptions",
+    "text": "Questions, Comments, and Assumptions\n\nThere were no measurements in the source csv files themselves so the units from the readme pdf were used.\nThe following source parameters were treated as field sensor CTD data:\n\nwater_pressure\noxygen_concentration\nturbidity\nphotosynthetically_active_radiation\npotential_density_sigmat\nwater_salinity\nchl_concentration\nwater_temperature\n\nAll other parameters were considered lab data\nThere were no QA/QC/Validator flags in the files so there were none loaded with these data",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Hood Canal Dissolved Oxygen Program"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-hcdop/index.html#translations",
+    "href": "content/data-management/studies/uw-hcdop/index.html#translations",
+    "title": "Hood Canal Dissolved Oxygen Program",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "Hood Canal Dissolved Oxygen Program"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-woac/index.html",
+    "href": "content/data-management/studies/uw-woac/index.html",
+    "title": "WOAC Cruises",
+    "section": "",
+    "text": "Caution\n\n\n\nThis page is still under construction.",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "WOAC Cruises"
+    ]
+  },
+  {
+    "objectID": "content/data-management/studies/uw-woac/index.html#translations",
+    "href": "content/data-management/studies/uw-woac/index.html#translations",
+    "title": "WOAC Cruises",
+    "section": "Translations",
+    "text": "Translations\nThe following translations were applied to the data:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)",
+    "crumbs": [
+      "Data Management",
+      "Data Handling & QA/QC",
+      "WOAC Cruises"
     ]
   },
   {
@@ -326,7 +944,7 @@
     "href": "content/inventory/index.html",
     "title": "Data Inventory",
     "section": "",
-    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.",
+    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations:\n\nKing County\nWashington State Department of Ecology\nPadilla Bay National Estuarine Research Reserve\nUniversity of Washington\nKwaiht\nNOAA Northwest Fisheries Science Center\nNorthwest Indian College\nOcean Research Academy\nPacific Shellfish Institute\nSeattle Aquarium\nStillaguamish Tribe of Indians\nWashington State Department of Health Biotoxin Program\nWashington Sea Grant\nWestern Washington University\nDepartment of Fisheries and Oceans Canada.",
     "crumbs": [
       "Inventory",
       "Data Inventory"
@@ -337,7 +955,7 @@
     "href": "content/inventory/index.html#overview",
     "title": "Data Inventory",
     "section": "",
-    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations: King County, Washington State Department of Ecology, Padilla Bay National Estuarine Research Reserve, University of Washington, Kwaiht, NOAA Northwest Fisheries Science Center, Northwest Indian College, Ocean Research Academy, Pacific Shellfish Institute, Seattle Aquarium, Stillaguamish Tribe of Indians, Washington State Department of Health Biotoxin Program, Washington Sea Grant, Western Washington University and Department of Fisheries and Oceans Canada.",
+    "text": "The Phytoplankton Data Inventory is a list of phytoplankton monitoring programs currently or previously implemented in Puget Sound waters, and includes the spatial and temporal scope of these studies, and the parameters that have been collected. The inventory does not include actual data points and measurements, which are being included in the Phytoplankton Monitoring Database. The data inventory was initiated during Phase 1 of the Phytoplankton Vital Sign Project and includes the following organizations:\n\nKing County\nWashington State Department of Ecology\nPadilla Bay National Estuarine Research Reserve\nUniversity of Washington\nKwaiht\nNOAA Northwest Fisheries Science Center\nNorthwest Indian College\nOcean Research Academy\nPacific Shellfish Institute\nSeattle Aquarium\nStillaguamish Tribe of Indians\nWashington State Department of Health Biotoxin Program\nWashington Sea Grant\nWestern Washington University\nDepartment of Fisheries and Oceans Canada.",
     "crumbs": [
       "Inventory",
       "Data Inventory"
@@ -348,7 +966,7 @@
     "href": "content/inventory/index.html#studies",
     "title": "Data Inventory",
     "section": "Studies",
-    "text": "Studies\n\n\n\nshape: (8, 3)\n\n\n\nstudy_id\nfull_name\ncontact\n\n\nstr\nstr\nstr\n\n\n\n\n\"DFO_Canada\"\n\"Seasonal and spatial dynamics …\n\"DFO Canada\"\n\n\n\"KingCounty\"\n\"King County Marine Phytoplankt…\n\"King County\"\n\n\n\"ORCA\"\n\"Ocean Research College Academy…\n\"ORCA\"\n\n\n\"PadillaBay\"\n\"Padilla Bay National Estuarine…\n\"Padilla Bay\"\n\n\n\"StillaguamishTribe\"\n\"Stillaguamish Tribe of Indians…\n\"Stillaguamish Tribe of Indians\"\n\n\n\"UW_HCDOP\"\n\"Hood Canal Dissolved Oxygen Pr…\n\"University of Washington\"\n\n\n\"UWSalish\"\n\"UW Salish Cruises\"\n\"UW\"\n\n\n\"WA_Ecology\"\n\"Washington Department of Ecolo…\n\"Washington DOE\"",
+    "text": "Studies\nThe following studies are included in the Phytoplankton Data Inventory:\n\n\n\n\n\n\n\n\n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nThis is the init_notebook_mode cell from ITables v2.2.4\n(you should not see this message - is your notebook trusted?)\n\n\n\n\n\n\n    \n      \n      Study Name\n      Provider\n    \n  \n\n\n    \n        \n        \n        \n        \n        \n        \n        \n        \n    \n    \n   \n    \n      \n  \n        \n    \n    \n  \n        \n    \n    \n  \n        \n    \n      \n  \n        \n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n\n            \n                \n                \n            \n        \n    \n\n\nLoading ITables v2.2.4 from the init_notebook_mode cell...\n(need help?)",
     "crumbs": [
       "Inventory",
       "Data Inventory"
@@ -359,7 +977,7 @@
     "href": "content/inventory/index.html#sampling-locations",
     "title": "Data Inventory",
     "section": "Sampling Locations",
-    "text": "Sampling Locations",
+    "text": "Sampling Locations\nBelow is a summary of all sampling locations included in the project database. Locations are grouped by region. Click or hover on a point to see more information about a location or toggle individual regions on and off using the legend.",
     "crumbs": [
       "Inventory",
       "Data Inventory"

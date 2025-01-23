@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="Phytoplankton Monitoring Database Structure and Content">
+<meta name="description" content="Phytoplankton Monitoring Data Management">
 
 <title>Data Management – Phytoplankton Indicator Phase 2</title>
 <style>
@@ -31,6 +31,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../">
+<link href="../../content/data-management/parquet-export.html" rel="next">
 <link href="../..//static/favicon.ico" rel="icon">
 <script src="../../site_libs/quarto-html/quarto.js"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
@@ -77,7 +78,7 @@ ul.task-list li input[type="checkbox"] {
 
 <link rel="stylesheet" href="../../static/styles.css">
 <meta property="og:title" content="Data Management – Phytoplankton Indicator Phase 2">
-<meta property="og:description" content="Phytoplankton Monitoring Database Structure and Content">
+<meta property="og:description" content="Phytoplankton Monitoring Data Management">
 <meta property="og:site_name" content="Phytoplankton Indicator Phase 2">
 </head>
 
@@ -109,6 +110,12 @@ ul.task-list li input[type="checkbox"] {
   <li class="nav-item">
     <a class="nav-link" href="../../content/analysis/index.html"> 
 <span class="menu-text">Analysis</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -145,6 +152,83 @@ ul.task-list li input[type="checkbox"] {
  <span class="menu-text">Data Management</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/parquet-export.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Export</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../content/data-management/studies/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Handling &amp; QA/QC</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/dfo-canada/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Seasonal and spatial dynamics of the phytoplankton community in the Salish Sea, 2015–2019</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/king-county/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Marine Phytoplankton Monitoring Program Sampling and Analysis Plan</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/orca/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Ocean Research College Academy</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/padilla-bay-nerr/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Padilla Bay National Estuarine Research Reserve</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/stillaguamish-tribe/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">PStillaguamish Tribe of Indians CTD, Mooring, and Phytoplankton Data</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/uw-fhl-pef/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Friday Harbor Labs Pelagic Ecosystem Function</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/uw-hcdop/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Hood Canal Dissolved Oxygen Program</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/uw-salish-cruises/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Salish Sea Cruises</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/uw-woac/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">WOAC Cruises</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../content/data-management/studies/washington-ecology/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Washington Department of Ecology Long-term Marine Water &amp; Sediment Data</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
     </ul>
     </div>
 </nav>
@@ -169,7 +253,7 @@ ul.task-list li input[type="checkbox"] {
 
 <div>
   <div class="description">
-    Phytoplankton Monitoring Database Structure and Content
+    Phytoplankton Monitoring Data Management
   </div>
 </div>
 
@@ -641,6 +725,15 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   }
 });
 </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../../content/data-management/parquet-export.html" class="pagination-link" aria-label="Data Export">
+        <span class="nav-page-text">Data Export</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
 </div> <!-- /content -->
 <footer class="footer">
   <div class="nav-footer">
