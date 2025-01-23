@@ -1,30 +1,22 @@
 ---
-title: {{ region }}
+title: "{{region}}"
 order: {{ order }}
-echo: false
+echo: true
 engine: knitr
 ---
 
 ```{r}
- # reticulate by the knitr engine to use python and r chunks in the same .qmd file
- reticulate::use_virtualenv('../../../.venv', required=TRUE) 
-```
-::: {.panel-tabset}
-
-{% for group in groupings %}
-
-## {{ group.0 }}-{{ group.1 }}
-
-### Data By Provider
-
-Table with a summary by data provider (dropdown select for the provider)
-
-```{r}
+# Load packages
 suppressMessages({
  library(dplyr)
  library(ggplot2)
+ library(plotly)
+ library(glue)
+ library(htmltools)
 })
 
+# Query GSIDB
+get_data <- function(sql) {
 con <- DBI::dbConnect(
   drv = RPostgres::Postgres(),
   dbname = Sys.getenv("POSTGRES_DATABASE"),
@@ -33,231 +25,253 @@ con <- DBI::dbConnect(
   user = Sys.getenv("POSTGRES_USER"),
   password = Sys.getenv("POSTGRES_PASSWORD")
 )
+on.exit(DBI::dbDisconnect(con))
+DBI::dbGetQuery(con, sql)
+}
+
+# A table with searching and a download button to export as csv
+make_table <- function(data, id, name) {
+t_id <- glue('{id}_{name}_table')
+file <- glue('{id}_{name}.csv')
+tagList(
+  tags$div(
+    style = "display: flex; justify-content: space-between;",
+    tags$button(
+      class = "btn btn-sm btn-primary rounded-3",
+      "Download as CSV",
+      onclick = glue("Reactable.downloadDataCSV('{t_id}', '{file}')")
+    ),
+    tags$input(
+      class = "rt-search",
+      type = "text",
+      placeholder = "Search",
+      oninput = glue("Reactable.setSearch('{t_id}', this.value)")
+    )
+  ),
+  reactable::reactable(
+    data, 
+    searchable = FALSE,
+    showPageSizeOptions = TRUE,
+    elementId = t_id
+  )
+)
+}
+
+```
+::: {.panel-tabset}
+
+{% for group in groupings %}
+## {{ group.0 }}-{{ group.1 }}
+
+### Data By Provider
+Table with a summary by data provider (dropdown select for the provider)
+
+```{r}
 
 sql <- "
 select
-    extract(year from sample_date) as year, count(*) as n_measurements
-from
-    {% if group.0 == 'Bottle' %}
-        app.bottle
-    {% elif group.0 == 'CTD' %}
-        app.ctd
-    {% elif group.0 == 'Mooring' %}
-        app.mooring
-    {% elif group.0 == 'Sp Abund' %}
-        app.sp_abund
+    {% if region != 'Global' %}
+    area_id,
     {% endif %}
+    provider,
+    {{group.3}} as parameter,
+    extract(year from sample_date) as year, 
+    count(*) as n_measurements
+from
+    {{group.2}}
 where
     1=1
     {% if region != 'Global' %}
         and area_id = '{{ region }}'
     {% endif %}
-    {% if group.0 == 'Bottle' %}
-        and analyte = '{{ group.1 }}'
-    {% elif group.0 == 'CTD' %}
-        and parameter = '{{ group.1 }}'
-    {% elif group.0 == 'Mooring' %}
-        and parameter = '{{ group.1 }}'
-    {% elif group.0 == 'Sp Abund' %}
-        and parameter = '{{ group.1 }}'
-    {% endif %}
+    and {{group.3}} = '{{group.1}}'
 group by
-    extract(year from sample_date)
+    {% if region != 'Global' %}
+    extract(year from sample_date), area_id, provider, {{group.3}}
+    {% else %}
+    extract(year from sample_date), provider, {{group.3}}
+    {% endif %}
+order by
+    year, provider
 "
 
-data <- DBI::dbGetQuery(con, sql)
+data <- get_data(sql)
+names(data) <- c(if('{{region}}' != "Global") "Area", "Provider", "Parameter", "Year", "Measurement Count")
 if(nrow(data) == 0) {
     cat("No data available")
 } else {
-    reactable::reactable(data, searchable = TRUE, showPageSizeOptions = TRUE)
+ make_table(data, id = "{{region}}_{{group.0}}_{{group.1}}", name = "summary")
 } 
 
 ```
 
 ### Geographical Extent
 
-```{python}
-import os
-import random
-import json
+```{r}
 
-import polars as pl
-import plotly.express as px
-
-uri = f'postgresql://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DATABASE")}'
-
-sql = f"""
+sql <- "
 select distinct
     location_id, 
     loc_desc as description,
     st_x(st_transform(loc_geom, 4326)) as lon, 
-    st_y(st_transform(loc_geom, 4326)) as lat
+    st_y(st_transform(loc_geom, 4326)) as lat,
+    COUNT(*) AS record_count 
 from
-    {% if group.0 == 'Bottle' %}
-        app.bottle
-    {% elif group.0 == 'CTD' %}
-        app.ctd
-    {% elif group.0 == 'Mooring' %}
-        app.mooring
-    {% elif group.0 == 'Sp Abund' %}
-        app.sp_abund
-    {% endif %}
+    {{group.2}}
 where
     1=1
     and loc_geom is not null
     {% if region != 'Global' %}
         and area_id = '{{ region }}'
     {% endif %}
-    {% if group.0 == 'Bottle' %}
-        and analyte = '{{ group.1 }}'
-    {% elif group.0 == 'CTD' %}
-        and parameter = '{{ group.1 }}'
-    {% elif group.0 == 'Mooring' %}
-        and parameter = '{{ group.1 }}'
-    {% elif group.0 == 'Sp Abund' %}
-        and parameter = '{{ group.1 }}'
-    {% endif %}
-"""
+    and {{group.3}} = '{{group.1}}'
+GROUP BY 
+    location_id, loc_desc, lon, lat
+"
 
-df = pl.read_database_uri(
-    sql,
-    uri,
-    engine="connectorx",
-)
+data <-get_data(sql) |> 
+  mutate(tooltip = glue("Location ID: {location_id}<br>Location Description: {description}<br>Sampe Count: {record_count}"))
+if(nrow(data) == 0) {
+    cat("No data available")
+} else {
+  # Plotly doesn't auto center map on data points with R
+  center_lon <- mean(data$lon)
+  center_lat <- mean(data$lat)
+  zoom <- ifelse('{{region}}' == "Global", 6, 8)
 
-fig = px.scatter_mapbox(
-    lat=df["lat"],
-    lon=df["lon"],
-    hover_name=df["location_id"],
-    mapbox_style="open-street-map",
-).update_layout(
-    margin={"r": 0, "t": 0, "l": 0, "b": 0},
-)
-
-if df.is_empty():
-    print("No data available")
-    fig = None
-    
-fig
+  plot_ly(
+    data = data,
+    lon = ~lon,
+    lat = ~lat,
+    type = 'scattermapbox',
+    mode = "markers",
+    marker = list(size = 9, line = list(width = 1, color = "black")),
+    hovertext = ~tooltip
+  ) |> 
+  layout(mapbox = list(
+    style = "open-street-map",
+    center = list(lon = center_lon, lat = center_lat),
+    zoom = zoom
+  ))
+} 
 ```
 
 ### Timeseries
 
 X = month/year, Y = number of samples by month
 
-```{python}
-import os
-import random
-import json
+```{r}
 
-import polars as pl
-import plotly.express as px
-
-sql = f"""
+sql <- "
 select
     date_trunc('month', sample_date)::date as sample_date,
     count(*) as n_measurements
 from
-    {% if group.0 == 'Bottle' %}
-        app.bottle
-    {% elif group.0 == 'CTD' %}
-        app.ctd
-    {% elif group.0 == 'Mooring' %}
-        app.mooring
-    {% elif group.0 == 'Sp Abund' %}
-        app.sp_abund
-    {% endif %}
+    {{group.2}}
 where
     1=1
     {% if region != 'Global' %}
         and area_id = '{{ region }}'
     {% endif %}
-    {% if group.0 == 'Bottle' %}
-        and analyte = '{{ group.1 }}'
-    {% elif group.0 == 'CTD' %}
-        and parameter = '{{ group.1 }}'
-    {% elif group.0 == 'Mooring' %}
-        and parameter = '{{ group.1 }}'
-    {% elif group.0 == 'Sp Abund' %}
-        and parameter = '{{ group.1 }}'
-    {% endif %}
+    and {{group.3}} = '{{group.1}}'
+    and sample_date IS NOT NULL
 group by
     date_trunc('month', sample_date)::date
-"""
+"
 
-df = pl.read_database_uri(
-    sql,
-    uri,
-    engine="connectorx",
-)
-
-fig = px.bar(
-    df,
-    x="sample_date",
-    y="n_measurements",
-    labels={"sample_date": "Sample Date", "n_measurements": "Number of Measurements"},
-    title="Number of Measurements by Month",
-)
-
-if df.is_empty():
-    print("No data available")
-    fig = None
-
-fig
+data <- get_data(sql)
+if(nrow(data) == 0) {
+    cat("No data available")
+} else {
+    plot_ly(data, x = ~sample_date, y = ~n_measurements, type = "bar") |> 
+    layout(
+        title = "{{group.1}} Measurements by Month",
+        xaxis = list(title = "Sample Date"),
+        yaxis = list(title = "Number of Measurements", tickformat = ",d")
+    )
+} 
 ```
 
 ### Depth distribution
 
-Vertical histogram by depth in 5 meter bins. Histogram should show counts of observations
-
-### Heatmap
-
 ```{r}
-suppressMessages({
- library(dplyr)
- library(ggplot2)
-})
 
 sql <- "
 select
+    upper_depth,
+    depth_units
+from
+    {{group.2}}
+where
+    1=1
+    and upper_depth is not null
+    and depth_units is not null
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    and {{group.3}} = '{{group.1}}'
+"
+
+data <- get_data(sql)
+if(nrow(data) == 0) {
+    cat("No data available")
+} else {
+    # Define min and max depth for the x-axis
+x_min <- 0     # Minimum depth
+x_max <- 350   # Maximum depth
+
+# Create histogram
+plot_ly(
+  data = data, 
+  x = ~upper_depth, 
+  type = "histogram",
+  xbins = list(
+    start = x_min,  # Set bin start
+    end = x_max,    # Set bin end
+    size = 5        # Bin width of 5 meters
+  )
+) |> 
+  layout(
+    title = "{{group.1}} Measurements by Depth",
+    xaxis = list(
+      title = glue("Depth ({toString(unique(data$depth_units))})"),
+      range = c(x_min, x_max)  # Ensure fixed depth range
+    ),
+    yaxis = list(title = "Number of Measurements", tickformat = ",d")
+  )
+} 
+
+```
+
+### Heatmap
+::: {.panel-tabset}
+#### Heatmap
+```{r}
+sql <- "
+select
+    {{group.3}} as parameter,
     extract(year from sample_date) as year,
     extract(month from sample_date) as month,
     count(*) as n_measurements,
     percentile_cont(0.5) within group (order by result) as median,
     string_agg(distinct units, ', ') as units
 from
-    {% if group.0 == 'Bottle' %}
-        app.bottle
-    {% elif group.0 == 'CTD' %}
-        app.ctd
-    {% elif group.0 == 'Mooring' %}
-        app.mooring
-    {% elif group.0 == 'Sp Abund' %}
-        app.sp_abund
-    {% endif %}
+    {{group.2}}
 where
     1=1
     {% if region != 'Global' %}
         and area_id = '{{ region }}'
     {% endif %}
-    {% if group.0 == 'Bottle' %}
-        and analyte = '{{ group.1 }}'
-    {% elif group.0 == 'CTD' %}
-        and parameter = '{{ group.1 }}'
-    {% elif group.0 == 'Mooring' %}
-        and parameter = '{{ group.1 }}'
-    {% elif group.0 == 'Sp Abund' %}
-        and parameter = '{{ group.1 }}'
-    {% endif %}
+    and {{group.3}} = '{{group.1}}'
 group by
     extract(year from sample_date),
-    extract(month from sample_date)
+    extract(month from sample_date),
+    {{group.3}}
     "
 
 # query db
-data <- DBI::dbGetQuery(con, sql) |>
+data <- get_data(sql) |>
     filter(!is.na(year), !is.na(month))
-DBI::dbDisconnect(con)
 
 if(nrow(data) == 0){
     cat("No data available")
@@ -276,7 +290,6 @@ if(nrow(data) == 0){
       )
 
   p <- ggplot(data = data, aes(x = abb_month, y = year, fill = median)) + 
-  #geom_tile(color = "black", width = 1) +
   ggiraph::geom_tile_interactive(aes(tooltip = tooltip), color = "black", width = 1) +
   scale_fill_distiller(
     palette = "Greens",
@@ -291,7 +304,7 @@ if(nrow(data) == 0){
     position = "top"
   ) +
   scale_y_reverse(expand = c(0,0)) +
-  labs(y = "Year", fill = paste0("Median {{ group.1 }}\n(",unique(data$units),")")) +
+  labs(y = "Year", fill = paste0("Median {{ group.1 }}\n(",toString(unique(data$units)),")")) +
   theme_bw() +
   theme(
     axis.title.x=element_blank(),
@@ -299,12 +312,29 @@ if(nrow(data) == 0){
     panel.grid.minor = element_blank(),
     #legend.position = "bottom"
   )
-if('{{ region }}' != "Global") ggiraph::girafe(ggobj = p) # interactive charts not showing for global for some reason.
-else p
+ggiraph::girafe(ggobj = p) 
 }
 
 ```
-
+#### Heatmap Data
+The heatmap data contains samples from all depths and locations in a given area. 
+```{r}
+if(nrow(data) == 0) {
+  cat("No data available")
+} else{
+  data |>
+    select(
+      #Area = area_id,
+      Year = year,
+      Month = abb_month,
+      Parameter = parameter,
+      Units = units,
+      'Measurement Count' = n_measurements,
+      Median = median
+  ) |>
+  make_table(id = "{{region}}_{{group.0}}_{{group.1}}", name = "heatmap")
+}
+```
+:::
 {% endfor %}
-
 :::
