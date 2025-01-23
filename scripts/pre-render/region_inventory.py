@@ -66,7 +66,7 @@ regions["Global"] = "global"
 # using the groupings.csv file.
 logging.info("Reading groupings from groupings.csv")
 groupings = [
-    (row["data_type"], row["parameter"])
+    (row["data_type"], row["parameter"], row["table"], row["parameter_col"])
     for row in pl.read_csv(Path(workdir, "groupings.csv"))
     .sort(["data_type", "parameter"])
     .to_dicts()

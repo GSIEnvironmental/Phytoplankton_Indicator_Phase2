@@ -64,45 +64,39 @@ tagList(
 ## {{ group.0 }}-{{ group.1 }}
 
 ### Data By Provider
-
-```{r}
-# Set SQL tables and where statements 
-table <- switch('{{ group.0 }}',
-    "Bottle" = "app.bottle",
-    "CTD" = "app.ctd",
-    "Mooring" = "app.mooring",
-    "Sp Abund" = "app.sp_abund"
-)
-parameter <- if("{{ group.0 }}" == "Bottle") "analyte" else if("{{ group.0 }}" %in% c("CTD", "Mooring","Sp Abund")) "parameter"
-parameter_where <- if(length(parameter)==0) "" else glue(" and {parameter} = '{{ group.1 }}'")
-region_where <- if('{{ region }}' == "Global") "" else " and area_id = '{{ region }}'"
-```
-
 Table with a summary by data provider (dropdown select for the provider)
 
 ```{r}
 
-sql <- glue("
+sql <- "
 select
+    {% if region != 'Global' %}
     area_id,
+    {% endif %}
     provider,
-    {parameter} as parameter,
+    {{group.3}} as parameter,
     extract(year from sample_date) as year, 
     count(*) as n_measurements
 from
-    {table}
+    {{group.2}}
 where
     1=1
-    {region_where}
-    {parameter_where}
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    and {{group.3}} = '{{group.1}}'
 group by
-    extract(year from sample_date), area_id, provider, {parameter}
+    {% if region != 'Global' %}
+    extract(year from sample_date), area_id, provider, {{group.3}}
+    {% else %}
+    extract(year from sample_date), provider, {{group.3}}
+    {% endif %}
 order by
     year, provider
-")
+"
 
 data <- get_data(sql)
-names(data) <- c("Area", "Provider", "Parameter", "Year", "Measurement Count")
+names(data) <- c(if('{{region}}' != "Global") "Area", "Provider", "Parameter", "Year", "Measurement Count")
 if(nrow(data) == 0) {
     cat("No data available")
 } else {
@@ -115,7 +109,7 @@ if(nrow(data) == 0) {
 
 ```{r}
 
-sql <- glue("
+sql <- "
 select distinct
     location_id, 
     loc_desc as description,
@@ -123,15 +117,17 @@ select distinct
     st_y(st_transform(loc_geom, 4326)) as lat,
     COUNT(*) AS record_count 
 from
-    {table}
+    {{group.2}}
 where
     1=1
     and loc_geom is not null
-    {region_where}
-    {parameter_where}
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    and {{group.3}} = '{{group.1}}'
 GROUP BY 
     location_id, loc_desc, lon, lat
-")
+"
 
 data <-get_data(sql) |> 
   mutate(tooltip = glue("Location ID: {location_id}<br>Location Description: {description}<br>Sampe Count: {record_count}"))
@@ -166,19 +162,22 @@ X = month/year, Y = number of samples by month
 
 ```{r}
 
-sql <- glue("
+sql <- "
 select
     date_trunc('month', sample_date)::date as sample_date,
     count(*) as n_measurements
 from
-    {table}
+    {{group.2}}
 where
     1=1
-    {region_where}
-    {parameter_where}
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    and {{group.3}} = '{{group.1}}'
+    and sample_date IS NOT NULL
 group by
     date_trunc('month', sample_date)::date
-")
+"
 
 data <- get_data(sql)
 if(nrow(data) == 0) {
@@ -186,7 +185,7 @@ if(nrow(data) == 0) {
 } else {
     plot_ly(data, x = ~sample_date, y = ~n_measurements, type = "bar") |> 
     layout(
-        title = "Number of Measurements by Month",
+        title = "{{group.1}} Measurements by Month",
         xaxis = list(title = "Sample Date"),
         yaxis = list(title = "Number of Measurements", tickformat = ",d")
     )
@@ -195,33 +194,80 @@ if(nrow(data) == 0) {
 
 ### Depth distribution
 
-Vertical histogram by depth in 5 meter bins. Histogram should show counts of observations
+```{r}
+
+sql <- "
+select
+    upper_depth,
+    depth_units
+from
+    {{group.2}}
+where
+    1=1
+    and upper_depth is not null
+    and depth_units is not null
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    and {{group.3}} = '{{group.1}}'
+"
+
+data <- get_data(sql)
+if(nrow(data) == 0) {
+    cat("No data available")
+} else {
+    # Define min and max depth for the x-axis
+x_min <- 0     # Minimum depth
+x_max <- 350   # Maximum depth
+
+# Create histogram
+plot_ly(
+  data = data, 
+  x = ~upper_depth, 
+  type = "histogram",
+  xbins = list(
+    start = x_min,  # Set bin start
+    end = x_max,    # Set bin end
+    size = 5        # Bin width of 5 meters
+  )
+) |> 
+  layout(
+    title = "{{group.1}} Measurements by Depth",
+    xaxis = list(
+      title = glue("Depth ({toString(unique(data$depth_units))})"),
+      range = c(x_min, x_max)  # Ensure fixed depth range
+    ),
+    yaxis = list(title = "Number of Measurements", tickformat = ",d")
+  )
+} 
+
+```
 
 ### Heatmap
 ::: {.panel-tabset}
 #### Heatmap
 ```{r}
-sql <- glue("
+sql <- "
 select
-    area_id,
-    {parameter} as parameter,
+    {{group.3}} as parameter,
     extract(year from sample_date) as year,
     extract(month from sample_date) as month,
     count(*) as n_measurements,
     percentile_cont(0.5) within group (order by result) as median,
     string_agg(distinct units, ', ') as units
 from
-    {table}
+    {{group.2}}
 where
     1=1
-    {region_where}
-    {parameter_where}
+    {% if region != 'Global' %}
+        and area_id = '{{ region }}'
+    {% endif %}
+    and {{group.3}} = '{{group.1}}'
 group by
     extract(year from sample_date),
     extract(month from sample_date),
-    area_id, 
-    {parameter}
-    ")
+    {{group.3}}
+    "
 
 # query db
 data <- get_data(sql) |>
@@ -244,7 +290,6 @@ if(nrow(data) == 0){
       )
 
   p <- ggplot(data = data, aes(x = abb_month, y = year, fill = median)) + 
-  #geom_tile(color = "black", width = 1) +
   ggiraph::geom_tile_interactive(aes(tooltip = tooltip), color = "black", width = 1) +
   scale_fill_distiller(
     palette = "Greens",
@@ -259,7 +304,7 @@ if(nrow(data) == 0){
     position = "top"
   ) +
   scale_y_reverse(expand = c(0,0)) +
-  labs(y = "Year", fill = paste0("Median {{ group.1 }}\n(",unique(data$units),")")) +
+  labs(y = "Year", fill = paste0("Median {{ group.1 }}\n(",toString(unique(data$units)),")")) +
   theme_bw() +
   theme(
     axis.title.x=element_blank(),
@@ -267,7 +312,7 @@ if(nrow(data) == 0){
     panel.grid.minor = element_blank(),
     #legend.position = "bottom"
   )
-ggiraph::girafe(ggobj = p) # interactive charts not showing for global for some reason.
+ggiraph::girafe(ggobj = p) 
 }
 
 ```
@@ -279,7 +324,7 @@ if(nrow(data) == 0) {
 } else{
   data |>
     select(
-      Area = area_id,
+      #Area = area_id,
       Year = year,
       Month = abb_month,
       Parameter = parameter,
@@ -292,5 +337,4 @@ if(nrow(data) == 0) {
 ```
 :::
 {% endfor %}
-
 :::
