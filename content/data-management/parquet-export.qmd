@@ -38,6 +38,7 @@ from pathlib import Path
 
 # Third party libraries
 import numexpr as ne
+import polars as pl
 import psycopg2
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -72,7 +73,7 @@ PARTITION_COLS = ["provider_key", "year"]
 # Directory to store the parquet datasets in.
 # Each SQL file in the SQL_DIR will contain its own
 # dataset within the OUTDIR folder.
-OUTDIR = Path("data")
+OUTDIR = Path("phyto-indicator-data")
 if OUTDIR.exists() and OUTDIR.is_dir():
     shutil.rmtree(OUTDIR)
 OUTDIR.mkdir(parents=True, exist_ok=True)
@@ -96,14 +97,14 @@ if "PG_PASSWORD" not in os.environ:
 PG_PASSWORD = os.getenv("PG_PASSWORD")
 
 
-def clparser():
+def clparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Export data from PostgreSQL to Parquet files"
+        description="Export data from PostgreSQL to Parquet files. If the summary dataset is selected, data inventory summary will be exported in CSV format."
     )
     parser.add_argument(
         "dataset",
         type=str,
-        choices=["bottle", "mooring", "ctd", "all"],
+        choices=["bottle", "mooring", "ctd", "summary", "all"],
         help="Dataset to export",
     )
     return parser
@@ -195,7 +196,7 @@ def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
     ds = pq.ParquetDataset(dataset_dir)
     logger.info(f"  num_files      : {len(ds.files)}")
     logger.info(f"  format_version : {meta.format_version}")
-    logger.info(f"  num_columns     : {meta.num_columns}")
+    logger.info(f"  num_columns    : {meta.num_columns}")
     logger.info(f"  num_row_groups : {meta.num_row_groups}")
     logger.info(f"  num_rows       : {meta.num_rows}")
 
@@ -204,7 +205,7 @@ def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
             logger.info(f"  {str(key.decode('utf-8')):<15}: {value.decode('utf-8')}")
 
 
-def mooring_export():
+def mooring_export() -> None:
     dataset_name = "Mooring"
     schema = pa.schema(
         [
@@ -264,7 +265,7 @@ def mooring_export():
     postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
 
 
-def ctd_export():
+def ctd_export() -> None:
     dataset_name = "CTD"
     schema = pa.schema(
         [
@@ -324,7 +325,7 @@ def ctd_export():
     postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
 
 
-def bottle_export():
+def bottle_export() -> None:
     dataset_name = "Bottle"
     schema = pa.schema(
         [
@@ -407,29 +408,50 @@ def bottle_export():
     postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
 
 
+def summary_export() -> None:
+    outfile = (
+        OUTDIR
+        / f"Phyto-Indicator-Summary_{datetime.now().date().strftime('%Y%m%d')}.csv"
+    )
+    pl.read_database_uri(
+        "SELECT * FROM app.summary",
+        uri=f"postgresql://{PG_USER}:{PG_PASSWORD}@{PG_HOST}/{PG_DATABASE}",
+        engine="connectorx",
+    ).write_csv(outfile, separator=",")
+
+
 def main():
     args = clparser().parse_args()
     _bottle_export = False
     _mooring_export = False
     _ctd_export = False
+    _summary_export = False
     if args.dataset == "bottle" or args.dataset == "all":
         _bottle_export = True
     if args.dataset == "mooring" or args.dataset == "all":
         _mooring_export = True
     if args.dataset == "ctd" or args.dataset == "all":
         _ctd_export = True
+    if args.dataset == "summary" or args.dataset == "all":
+        _summary_export = True
 
     logger.info("Starting export...")
+    logger.info(f"Summary Export : {_summary_export}")
     logger.info(f"Bottle Export  : {_bottle_export}")
     logger.info(f"Mooring Export : {_mooring_export}")
     logger.info(f"CTD Export     : {_ctd_export}")
 
+    start_time = datetime.now()
+    if _summary_export:
+        summary_export()
     if _bottle_export:
         bottle_export()
     if _mooring_export:
         mooring_export()
     if _ctd_export:
         ctd_export()
+    end_time = datetime.now()
+    logger.info(f"Export completed in {(end_time - start_time) / 60}")
 
     logger.info(f"Compressing output directory to {GZ_TARFILE}...")
     with tarfile.open(GZ_TARFILE, "w:gz") as tar:
