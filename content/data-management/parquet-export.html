@@ -347,431 +347,453 @@ Important
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Third party libraries</span></span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numexpr <span class="im">as</span> ne</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> psycopg2</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyarrow <span class="im">as</span> pa</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyarrow.parquet <span class="im">as</span> pq</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dotenv <span class="im">import</span> load_dotenv</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> psycopg2.extras <span class="im">import</span> RealDictCursor</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm <span class="im">import</span> tqdm</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>load_dotenv()</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>logging.basicConfig(</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    level<span class="op">=</span>logging.INFO, <span class="bu">format</span><span class="op">=</span><span class="st">"</span><span class="sc">%(asctime)s</span><span class="st"> </span><span class="sc">%(message)s</span><span class="st">"</span>, datefmt<span class="op">=</span><span class="st">"[%Y-%m-</span><span class="sc">%d</span><span class="st"> %H:%M:%S]"</span></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>logger <span class="op">=</span> logging.getLogger(<span class="va">__name__</span>)</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Sets the maximum number of threads that numexpr can use (pyarrow uses numexpr)</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co"># to 80% of the number of cores on the machine.</span></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>ne.numexpr_max_threads <span class="op">=</span> <span class="bu">int</span>(ne.detect_number_of_cores() <span class="op">*</span> <span class="fl">0.8</span>)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Number of rows to process at a time.</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>BATCH_SIZE <span class="op">=</span> <span class="dv">50_000</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Column names to partition data by.</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co"># The partitioned dataset will be organized into</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># folders based on values of the partitioning column.</span></span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="co">#   ./output</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co">#   ├── provider=King County</span></span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co">#   ├── ...</span></span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co">#   └── provider=Washington Department of Ecology</span></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>PARTITION_COLS <span class="op">=</span> [<span class="st">"provider_key"</span>, <span class="st">"year"</span>]</span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Directory to store the parquet datasets in.</span></span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Each SQL file in the SQL_DIR will contain its own</span></span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co"># dataset within the OUTDIR folder.</span></span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>OUTDIR <span class="op">=</span> Path(<span class="st">"data"</span>)</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> OUTDIR.exists() <span class="kw">and</span> OUTDIR.is_dir():</span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    shutil.rmtree(OUTDIR)</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>OUTDIR.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>GZ_TARFILE <span class="op">=</span> Path(OUTDIR.name <span class="op">+</span> <span class="st">".tar.gz"</span>)</span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> GZ_TARFILE.exists():</span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    GZ_TARFILE.unlink()</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a><span class="co"># PostgreSQL connection details</span></span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"PG_HOST"</span> <span class="kw">not</span> <span class="kw">in</span> os.environ:</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Environment variable PG_HOST is not set"</span>)</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>PG_HOST <span class="op">=</span> os.getenv(<span class="st">"PG_HOST"</span>)</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"PG_DATABASE"</span> <span class="kw">not</span> <span class="kw">in</span> os.environ:</span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Environment variable PG_DATABASE is not set"</span>)</span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>PG_DATABASE <span class="op">=</span> os.getenv(<span class="st">"PG_DATABASE"</span>)</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"PG_USER"</span> <span class="kw">not</span> <span class="kw">in</span> os.environ:</span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Environment variable PG_USER is not set"</span>)</span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>PG_USER <span class="op">=</span> os.getenv(<span class="st">"PG_USER"</span>)</span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"PG_PASSWORD"</span> <span class="kw">not</span> <span class="kw">in</span> os.environ:</span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Environment variable PG_PASSWORD is not set"</span>)</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>PG_PASSWORD <span class="op">=</span> os.getenv(<span class="st">"PG_PASSWORD"</span>)</span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> psycopg2</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyarrow <span class="im">as</span> pa</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyarrow.parquet <span class="im">as</span> pq</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dotenv <span class="im">import</span> load_dotenv</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> psycopg2.extras <span class="im">import</span> RealDictCursor</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm <span class="im">import</span> tqdm</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>load_dotenv()</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>logging.basicConfig(</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    level<span class="op">=</span>logging.INFO, <span class="bu">format</span><span class="op">=</span><span class="st">"</span><span class="sc">%(asctime)s</span><span class="st"> </span><span class="sc">%(message)s</span><span class="st">"</span>, datefmt<span class="op">=</span><span class="st">"[%Y-%m-</span><span class="sc">%d</span><span class="st"> %H:%M:%S]"</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>logger <span class="op">=</span> logging.getLogger(<span class="va">__name__</span>)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Sets the maximum number of threads that numexpr can use (pyarrow uses numexpr)</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># to 80% of the number of cores on the machine.</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>ne.numexpr_max_threads <span class="op">=</span> <span class="bu">int</span>(ne.detect_number_of_cores() <span class="op">*</span> <span class="fl">0.8</span>)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Number of rows to process at a time.</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>BATCH_SIZE <span class="op">=</span> <span class="dv">50_000</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Column names to partition data by.</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># The partitioned dataset will be organized into</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co"># folders based on values of the partitioning column.</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co">#   ./output</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co">#   ├── provider=King County</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co">#   ├── ...</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co">#   └── provider=Washington Department of Ecology</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>PARTITION_COLS <span class="op">=</span> [<span class="st">"provider_key"</span>, <span class="st">"year"</span>]</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Directory to store the parquet datasets in.</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Each SQL file in the SQL_DIR will contain its own</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co"># dataset within the OUTDIR folder.</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>OUTDIR <span class="op">=</span> Path(<span class="st">"phyto-indicator-data"</span>)</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> OUTDIR.exists() <span class="kw">and</span> OUTDIR.is_dir():</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    shutil.rmtree(OUTDIR)</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>OUTDIR.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>GZ_TARFILE <span class="op">=</span> Path(OUTDIR.name <span class="op">+</span> <span class="st">".tar.gz"</span>)</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> GZ_TARFILE.exists():</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>    GZ_TARFILE.unlink()</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="co"># PostgreSQL connection details</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"PG_HOST"</span> <span class="kw">not</span> <span class="kw">in</span> os.environ:</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Environment variable PG_HOST is not set"</span>)</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>PG_HOST <span class="op">=</span> os.getenv(<span class="st">"PG_HOST"</span>)</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"PG_DATABASE"</span> <span class="kw">not</span> <span class="kw">in</span> os.environ:</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Environment variable PG_DATABASE is not set"</span>)</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>PG_DATABASE <span class="op">=</span> os.getenv(<span class="st">"PG_DATABASE"</span>)</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"PG_USER"</span> <span class="kw">not</span> <span class="kw">in</span> os.environ:</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Environment variable PG_USER is not set"</span>)</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>PG_USER <span class="op">=</span> os.getenv(<span class="st">"PG_USER"</span>)</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">"PG_PASSWORD"</span> <span class="kw">not</span> <span class="kw">in</span> os.environ:</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Environment variable PG_PASSWORD is not set"</span>)</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>PG_PASSWORD <span class="op">=</span> os.getenv(<span class="st">"PG_PASSWORD"</span>)</span>
 <span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clparser():</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    parser <span class="op">=</span> argparse.ArgumentParser(</span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"Export data from PostgreSQL to Parquet files"</span></span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    parser.add_argument(</span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>        <span class="st">"dataset"</span>,</span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>        <span class="bu">type</span><span class="op">=</span><span class="bu">str</span>,</span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>        choices<span class="op">=</span>[<span class="st">"bottle"</span>, <span class="st">"mooring"</span>, <span class="st">"ctd"</span>, <span class="st">"all"</span>],</span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>        <span class="bu">help</span><span class="op">=</span><span class="st">"Dataset to export"</span>,</span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> parser</span>
-<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clparser() <span class="op">-&gt;</span> argparse.ArgumentParser:</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    parser <span class="op">=</span> argparse.ArgumentParser(</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"Export data from PostgreSQL to Parquet files. If the summary dataset is selected, data inventory summary will be exported in CSV format."</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    parser.add_argument(</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>        <span class="st">"dataset"</span>,</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>        <span class="bu">type</span><span class="op">=</span><span class="bu">str</span>,</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>        choices<span class="op">=</span>[<span class="st">"bottle"</span>, <span class="st">"mooring"</span>, <span class="st">"ctd"</span>, <span class="st">"summary"</span>, <span class="st">"all"</span>],</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>        <span class="bu">help</span><span class="op">=</span><span class="st">"Dataset to export"</span>,</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> parser</span>
 <span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> postgres_to_parquet(dataset_name: <span class="bu">str</span>, sql: <span class="bu">str</span>, schema: <span class="bu">list</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>    dataset_dir <span class="op">=</span> OUTDIR <span class="op">/</span> dataset_name</span>
-<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Processing data for </span><span class="sc">{</span>dataset_dir<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create the dataset directory</span></span>
-<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> dataset_dir.exists() <span class="kw">and</span> dataset_dir.is_dir():</span>
-<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>        shutil.rmtree(dataset_dir)</span>
-<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>    dataset_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>    metadata <span class="op">=</span> {</span>
-<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>        <span class="st">"dataset_name"</span>: dataset_name,</span>
-<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>        <span class="st">"author"</span>: <span class="st">"GSI Environmental Inc."</span>,</span>
-<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>        <span class="st">"created_at"</span>: datetime.now().isoformat(),</span>
-<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>    schema_with_metadata <span class="op">=</span> schema.with_metadata(</span>
-<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>        {k: <span class="bu">str</span>(v).encode(<span class="st">"utf-8"</span>) <span class="cf">for</span> k, v <span class="kw">in</span> metadata.items()}</span>
-<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>    metadata_collector <span class="op">=</span> []</span>
-<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> conn.cursor(</span>
-<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"phyto_db_large_export"</span>, cursor_factory<span class="op">=</span>RealDictCursor</span>
-<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>    ) <span class="im">as</span> cursor:</span>
-<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>        logger.info(<span class="st">"Querying database..."</span>)</span>
-<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>        cursor.execute(</span>
-<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"""</span></span>
-<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a><span class="ss">            SELECT</span></span>
-<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a><span class="ss">                *,</span></span>
-<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a><span class="ss">                replace(provider, ' ', '_') as provider_key,</span></span>
-<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a><span class="ss">                extract(year from sample_date)::integer as year</span></span>
-<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a><span class="ss">            FROM (</span></span>
-<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a><span class="ss">                </span><span class="sc">{</span>sql<span class="sc">}</span></span>
-<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a><span class="ss">            ) as subquery</span></span>
-<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a><span class="ss">            WHERE</span></span>
-<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a><span class="ss">                extract(year from sample_date) &gt;= 1999</span></span>
-<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a><span class="ss">        """</span></span>
-<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>        logger.info(<span class="ss">f"Writing results to parquet in </span><span class="sc">{</span>dataset_dir<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> tqdm(desc<span class="op">=</span><span class="st">"Processing batches"</span>, unit<span class="op">=</span><span class="st">" batch"</span>) <span class="im">as</span> pbar:</span>
-<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>            <span class="cf">while</span> <span class="va">True</span>:</span>
-<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Fetch a batch of rows</span></span>
-<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a>                rows <span class="op">=</span> cursor.fetchmany(BATCH_SIZE)</span>
-<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> <span class="kw">not</span> rows:</span>
-<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">break</span></span>
-<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Convert fetched rows (list of dictionaries) to a pyarrow Table</span></span>
-<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Convert dictionary rows to columns (pyarrow expects columns)</span></span>
-<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>                <span class="co"># batch_dict = {key: [row[key] for row in rows] for key in rows[0]}</span></span>
-<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Ensure all keys exist in each batch to match the schema</span></span>
-<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>                batch_dict <span class="op">=</span> {</span>
-<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>                    key: [row.get(key, <span class="va">None</span>) <span class="cf">for</span> row <span class="kw">in</span> rows] <span class="cf">for</span> key <span class="kw">in</span> schema.names</span>
-<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>                }</span>
-<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a>                table <span class="op">=</span> pa.Table.from_pydict(batch_dict, schema<span class="op">=</span>schema_with_metadata)</span>
-<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Write Arrow Table to Parquet file (as part of a dataset)</span></span>
-<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>                pq.write_to_dataset(</span>
-<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a>                    table<span class="op">=</span>table,</span>
-<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a>                    root_path<span class="op">=</span>dataset_dir,</span>
-<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>                    compression<span class="op">=</span><span class="st">"snappy"</span>,</span>
-<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>                    partition_cols<span class="op">=</span>PARTITION_COLS,</span>
-<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a>                    use_threads<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a>                    metadata_collector<span class="op">=</span>metadata_collector,</span>
-<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a>                )</span>
-<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a>                pbar.update(<span class="dv">1</span>)</span>
-<span id="cb2-147"><a href="#cb2-147" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-148"><a href="#cb2-148" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Remove the partition columns from the schema</span></span>
-<span id="cb2-149"><a href="#cb2-149" aria-hidden="true" tabindex="-1"></a>            <span class="co"># so we can write the metadata file</span></span>
-<span id="cb2-150"><a href="#cb2-150" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(PARTITION_COLS)):</span>
-<span id="cb2-151"><a href="#cb2-151" aria-hidden="true" tabindex="-1"></a>                schema <span class="op">=</span> schema.remove(<span class="bu">len</span>(schema) <span class="op">-</span> <span class="dv">1</span>)</span>
-<span id="cb2-152"><a href="#cb2-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-153"><a href="#cb2-153" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> key, value <span class="kw">in</span> metadata.items():</span>
-<span id="cb2-154"><a href="#cb2-154" aria-hidden="true" tabindex="-1"></a>                metadata_collector[<span class="dv">0</span>].metadata[key] <span class="op">=</span> <span class="bu">str</span>(value).encode(<span class="st">"utf-8"</span>)</span>
-<span id="cb2-155"><a href="#cb2-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-156"><a href="#cb2-156" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Write combined metadata file</span></span>
-<span id="cb2-157"><a href="#cb2-157" aria-hidden="true" tabindex="-1"></a>            pq.write_metadata(</span>
-<span id="cb2-158"><a href="#cb2-158" aria-hidden="true" tabindex="-1"></a>                schema<span class="op">=</span>schema.with_metadata(</span>
-<span id="cb2-159"><a href="#cb2-159" aria-hidden="true" tabindex="-1"></a>                    {k: <span class="bu">str</span>(v).encode(<span class="st">"utf-8"</span>) <span class="cf">for</span> k, v <span class="kw">in</span> metadata.items()}</span>
-<span id="cb2-160"><a href="#cb2-160" aria-hidden="true" tabindex="-1"></a>                ),</span>
-<span id="cb2-161"><a href="#cb2-161" aria-hidden="true" tabindex="-1"></a>                where<span class="op">=</span><span class="ss">f"</span><span class="sc">{</span>dataset_dir<span class="sc">}</span><span class="ss">/_metadata"</span>,</span>
-<span id="cb2-162"><a href="#cb2-162" aria-hidden="true" tabindex="-1"></a>                metadata_collector<span class="op">=</span>metadata_collector,</span>
-<span id="cb2-163"><a href="#cb2-163" aria-hidden="true" tabindex="-1"></a>            )</span>
-<span id="cb2-164"><a href="#cb2-164" aria-hidden="true" tabindex="-1"></a>            logger.info(<span class="ss">f"Metadata written to </span><span class="sc">{</span>dataset_dir <span class="op">/</span> <span class="st">'_metadata'</span><span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-165"><a href="#cb2-165" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-166"><a href="#cb2-166" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="st">"Dataset export complete"</span>)</span>
-<span id="cb2-167"><a href="#cb2-167" aria-hidden="true" tabindex="-1"></a>    meta <span class="op">=</span> pq.read_metadata(dataset_dir <span class="op">/</span> <span class="st">"_metadata"</span>)</span>
-<span id="cb2-168"><a href="#cb2-168" aria-hidden="true" tabindex="-1"></a>    ds <span class="op">=</span> pq.ParquetDataset(dataset_dir)</span>
-<span id="cb2-169"><a href="#cb2-169" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  num_files      : </span><span class="sc">{</span><span class="bu">len</span>(ds.files)<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-170"><a href="#cb2-170" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  format_version : </span><span class="sc">{</span>meta<span class="sc">.</span>format_version<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-171"><a href="#cb2-171" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  num_columns     : </span><span class="sc">{</span>meta<span class="sc">.</span>num_columns<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-172"><a href="#cb2-172" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  num_row_groups : </span><span class="sc">{</span>meta<span class="sc">.</span>num_row_groups<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-173"><a href="#cb2-173" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  num_rows       : </span><span class="sc">{</span>meta<span class="sc">.</span>num_rows<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-174"><a href="#cb2-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-175"><a href="#cb2-175" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key, value <span class="kw">in</span> meta.metadata.items():</span>
-<span id="cb2-176"><a href="#cb2-176" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="st">"schema"</span> <span class="kw">not</span> <span class="kw">in</span> key.decode(<span class="st">"utf-8"</span>):</span>
-<span id="cb2-177"><a href="#cb2-177" aria-hidden="true" tabindex="-1"></a>            logger.info(<span class="ss">f"  </span><span class="sc">{</span><span class="bu">str</span>(key.decode(<span class="st">'utf-8'</span>))<span class="sc">:&lt;15}</span><span class="ss">: </span><span class="sc">{</span>value<span class="sc">.</span>decode(<span class="st">'utf-8'</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-178"><a href="#cb2-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> postgres_to_parquet(dataset_name: <span class="bu">str</span>, sql: <span class="bu">str</span>, schema: <span class="bu">list</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>    dataset_dir <span class="op">=</span> OUTDIR <span class="op">/</span> dataset_name</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Processing data for </span><span class="sc">{</span>dataset_dir<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create the dataset directory</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> dataset_dir.exists() <span class="kw">and</span> dataset_dir.is_dir():</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>        shutil.rmtree(dataset_dir)</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>    dataset_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>    metadata <span class="op">=</span> {</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>        <span class="st">"dataset_name"</span>: dataset_name,</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>        <span class="st">"author"</span>: <span class="st">"GSI Environmental Inc."</span>,</span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>        <span class="st">"created_at"</span>: datetime.now().isoformat(),</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>    schema_with_metadata <span class="op">=</span> schema.with_metadata(</span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>        {k: <span class="bu">str</span>(v).encode(<span class="st">"utf-8"</span>) <span class="cf">for</span> k, v <span class="kw">in</span> metadata.items()}</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>    metadata_collector <span class="op">=</span> []</span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> conn.cursor(</span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"phyto_db_large_export"</span>, cursor_factory<span class="op">=</span>RealDictCursor</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>    ) <span class="im">as</span> cursor:</span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>        logger.info(<span class="st">"Querying database..."</span>)</span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>        cursor.execute(</span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"""</span></span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a><span class="ss">            SELECT</span></span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a><span class="ss">                *,</span></span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a><span class="ss">                replace(provider, ' ', '_') as provider_key,</span></span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a><span class="ss">                extract(year from sample_date)::integer as year</span></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a><span class="ss">            FROM (</span></span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a><span class="ss">                </span><span class="sc">{</span>sql<span class="sc">}</span></span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a><span class="ss">            ) as subquery</span></span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a><span class="ss">            WHERE</span></span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a><span class="ss">                extract(year from sample_date) &gt;= 1999</span></span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a><span class="ss">        """</span></span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>        logger.info(<span class="ss">f"Writing results to parquet in </span><span class="sc">{</span>dataset_dir<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> tqdm(desc<span class="op">=</span><span class="st">"Processing batches"</span>, unit<span class="op">=</span><span class="st">" batch"</span>) <span class="im">as</span> pbar:</span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>            <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Fetch a batch of rows</span></span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>                rows <span class="op">=</span> cursor.fetchmany(BATCH_SIZE)</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> <span class="kw">not</span> rows:</span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">break</span></span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Convert fetched rows (list of dictionaries) to a pyarrow Table</span></span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Convert dictionary rows to columns (pyarrow expects columns)</span></span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>                <span class="co"># batch_dict = {key: [row[key] for row in rows] for key in rows[0]}</span></span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Ensure all keys exist in each batch to match the schema</span></span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>                batch_dict <span class="op">=</span> {</span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>                    key: [row.get(key, <span class="va">None</span>) <span class="cf">for</span> row <span class="kw">in</span> rows] <span class="cf">for</span> key <span class="kw">in</span> schema.names</span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>                }</span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>                table <span class="op">=</span> pa.Table.from_pydict(batch_dict, schema<span class="op">=</span>schema_with_metadata)</span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Write Arrow Table to Parquet file (as part of a dataset)</span></span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a>                pq.write_to_dataset(</span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a>                    table<span class="op">=</span>table,</span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>                    root_path<span class="op">=</span>dataset_dir,</span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>                    compression<span class="op">=</span><span class="st">"snappy"</span>,</span>
+<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a>                    partition_cols<span class="op">=</span>PARTITION_COLS,</span>
+<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a>                    use_threads<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a>                    metadata_collector<span class="op">=</span>metadata_collector,</span>
+<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a>                )</span>
+<span id="cb2-147"><a href="#cb2-147" aria-hidden="true" tabindex="-1"></a>                pbar.update(<span class="dv">1</span>)</span>
+<span id="cb2-148"><a href="#cb2-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-149"><a href="#cb2-149" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Remove the partition columns from the schema</span></span>
+<span id="cb2-150"><a href="#cb2-150" aria-hidden="true" tabindex="-1"></a>            <span class="co"># so we can write the metadata file</span></span>
+<span id="cb2-151"><a href="#cb2-151" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(PARTITION_COLS)):</span>
+<span id="cb2-152"><a href="#cb2-152" aria-hidden="true" tabindex="-1"></a>                schema <span class="op">=</span> schema.remove(<span class="bu">len</span>(schema) <span class="op">-</span> <span class="dv">1</span>)</span>
+<span id="cb2-153"><a href="#cb2-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-154"><a href="#cb2-154" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> key, value <span class="kw">in</span> metadata.items():</span>
+<span id="cb2-155"><a href="#cb2-155" aria-hidden="true" tabindex="-1"></a>                metadata_collector[<span class="dv">0</span>].metadata[key] <span class="op">=</span> <span class="bu">str</span>(value).encode(<span class="st">"utf-8"</span>)</span>
+<span id="cb2-156"><a href="#cb2-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-157"><a href="#cb2-157" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Write combined metadata file</span></span>
+<span id="cb2-158"><a href="#cb2-158" aria-hidden="true" tabindex="-1"></a>            pq.write_metadata(</span>
+<span id="cb2-159"><a href="#cb2-159" aria-hidden="true" tabindex="-1"></a>                schema<span class="op">=</span>schema.with_metadata(</span>
+<span id="cb2-160"><a href="#cb2-160" aria-hidden="true" tabindex="-1"></a>                    {k: <span class="bu">str</span>(v).encode(<span class="st">"utf-8"</span>) <span class="cf">for</span> k, v <span class="kw">in</span> metadata.items()}</span>
+<span id="cb2-161"><a href="#cb2-161" aria-hidden="true" tabindex="-1"></a>                ),</span>
+<span id="cb2-162"><a href="#cb2-162" aria-hidden="true" tabindex="-1"></a>                where<span class="op">=</span><span class="ss">f"</span><span class="sc">{</span>dataset_dir<span class="sc">}</span><span class="ss">/_metadata"</span>,</span>
+<span id="cb2-163"><a href="#cb2-163" aria-hidden="true" tabindex="-1"></a>                metadata_collector<span class="op">=</span>metadata_collector,</span>
+<span id="cb2-164"><a href="#cb2-164" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb2-165"><a href="#cb2-165" aria-hidden="true" tabindex="-1"></a>            logger.info(<span class="ss">f"Metadata written to </span><span class="sc">{</span>dataset_dir <span class="op">/</span> <span class="st">'_metadata'</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-166"><a href="#cb2-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-167"><a href="#cb2-167" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="st">"Dataset export complete"</span>)</span>
+<span id="cb2-168"><a href="#cb2-168" aria-hidden="true" tabindex="-1"></a>    meta <span class="op">=</span> pq.read_metadata(dataset_dir <span class="op">/</span> <span class="st">"_metadata"</span>)</span>
+<span id="cb2-169"><a href="#cb2-169" aria-hidden="true" tabindex="-1"></a>    ds <span class="op">=</span> pq.ParquetDataset(dataset_dir)</span>
+<span id="cb2-170"><a href="#cb2-170" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  num_files      : </span><span class="sc">{</span><span class="bu">len</span>(ds.files)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-171"><a href="#cb2-171" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  format_version : </span><span class="sc">{</span>meta<span class="sc">.</span>format_version<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-172"><a href="#cb2-172" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  num_columns    : </span><span class="sc">{</span>meta<span class="sc">.</span>num_columns<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-173"><a href="#cb2-173" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  num_row_groups : </span><span class="sc">{</span>meta<span class="sc">.</span>num_row_groups<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-174"><a href="#cb2-174" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"  num_rows       : </span><span class="sc">{</span>meta<span class="sc">.</span>num_rows<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-175"><a href="#cb2-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-176"><a href="#cb2-176" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key, value <span class="kw">in</span> meta.metadata.items():</span>
+<span id="cb2-177"><a href="#cb2-177" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="st">"schema"</span> <span class="kw">not</span> <span class="kw">in</span> key.decode(<span class="st">"utf-8"</span>):</span>
+<span id="cb2-178"><a href="#cb2-178" aria-hidden="true" tabindex="-1"></a>            logger.info(<span class="ss">f"  </span><span class="sc">{</span><span class="bu">str</span>(key.decode(<span class="st">'utf-8'</span>))<span class="sc">:&lt;15}</span><span class="ss">: </span><span class="sc">{</span>value<span class="sc">.</span>decode(<span class="st">'utf-8'</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
 <span id="cb2-179"><a href="#cb2-179" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-180"><a href="#cb2-180" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mooring_export():</span>
-<span id="cb2-181"><a href="#cb2-181" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"Mooring"</span></span>
-<span id="cb2-182"><a href="#cb2-182" aria-hidden="true" tabindex="-1"></a>    schema <span class="op">=</span> pa.schema(</span>
-<span id="cb2-183"><a href="#cb2-183" aria-hidden="true" tabindex="-1"></a>        [</span>
-<span id="cb2-184"><a href="#cb2-184" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"area_id"</span>, pa.string()),</span>
-<span id="cb2-185"><a href="#cb2-185" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"location_id"</span>, pa.string()),</span>
-<span id="cb2-186"><a href="#cb2-186" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_desc"</span>, pa.string()),</span>
-<span id="cb2-187"><a href="#cb2-187" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_type"</span>, pa.string()),</span>
-<span id="cb2-188"><a href="#cb2-188" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"x_coord"</span>, pa.float64()),</span>
-<span id="cb2-189"><a href="#cb2-189" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"y_coord"</span>, pa.float64()),</span>
-<span id="cb2-190"><a href="#cb2-190" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"srid"</span>, pa.int64()),</span>
-<span id="cb2-191"><a href="#cb2-191" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coord_sys"</span>, pa.string()),</span>
-<span id="cb2-192"><a href="#cb2-192" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_method"</span>, pa.string()),</span>
-<span id="cb2-193"><a href="#cb2-193" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider"</span>, pa.string()),</span>
-<span id="cb2-194"><a href="#cb2-194" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_id"</span>, pa.string()),</span>
-<span id="cb2-195"><a href="#cb2-195" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_name"</span>, pa.string()),</span>
-<span id="cb2-196"><a href="#cb2-196" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_loc_id"</span>, pa.string()),</span>
-<span id="cb2-197"><a href="#cb2-197" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_doc"</span>, pa.string()),</span>
-<span id="cb2-198"><a href="#cb2-198" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_date"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
-<span id="cb2-199"><a href="#cb2-199" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coll_scheme"</span>, pa.string()),</span>
-<span id="cb2-200"><a href="#cb2-200" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_material"</span>, pa.string()),</span>
-<span id="cb2-201"><a href="#cb2-201" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_id"</span>, pa.string()),</span>
-<span id="cb2-202"><a href="#cb2-202" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_desc"</span>, pa.string()),</span>
-<span id="cb2-203"><a href="#cb2-203" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"upper_depth"</span>, pa.float64()),</span>
-<span id="cb2-204"><a href="#cb2-204" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lower_depth"</span>, pa.float64()),</span>
-<span id="cb2-205"><a href="#cb2-205" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"depth_units"</span>, pa.string()),</span>
-<span id="cb2-206"><a href="#cb2-206" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"comments"</span>, pa.string()),</span>
-<span id="cb2-207"><a href="#cb2-207" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"parameter"</span>, pa.string()),</span>
-<span id="cb2-208"><a href="#cb2-208" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"meas_method"</span>, pa.string()),</span>
-<span id="cb2-209"><a href="#cb2-209" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"replicate"</span>, pa.string()),</span>
-<span id="cb2-210"><a href="#cb2-210" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"result"</span>, pa.float64()),</span>
-<span id="cb2-211"><a href="#cb2-211" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"units"</span>, pa.string()),</span>
-<span id="cb2-212"><a href="#cb2-212" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"detected"</span>, pa.string()),</span>
-<span id="cb2-213"><a href="#cb2-213" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qualifiers"</span>, pa.string()),</span>
-<span id="cb2-214"><a href="#cb2-214" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"validator_flags"</span>, pa.string()),</span>
-<span id="cb2-215"><a href="#cb2-215" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qa_level"</span>, pa.string()),</span>
-<span id="cb2-216"><a href="#cb2-216" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"data_quality"</span>, pa.string()),</span>
-<span id="cb2-217"><a href="#cb2-217" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider_key"</span>, pa.string()),</span>
-<span id="cb2-218"><a href="#cb2-218" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"year"</span>, pa.int32()),</span>
-<span id="cb2-219"><a href="#cb2-219" aria-hidden="true" tabindex="-1"></a>        ]</span>
-<span id="cb2-220"><a href="#cb2-220" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-221"><a href="#cb2-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-222"><a href="#cb2-222" aria-hidden="true" tabindex="-1"></a>    sql <span class="op">=</span> <span class="st">"""</span></span>
-<span id="cb2-223"><a href="#cb2-223" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT</span></span>
-<span id="cb2-224"><a href="#cb2-224" aria-hidden="true" tabindex="-1"></a><span class="st">            *</span></span>
-<span id="cb2-225"><a href="#cb2-225" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM app.mooring</span></span>
-<span id="cb2-226"><a href="#cb2-226" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE</span></span>
-<span id="cb2-227"><a href="#cb2-227" aria-hidden="true" tabindex="-1"></a><span class="st">            parameter in (</span></span>
-<span id="cb2-228"><a href="#cb2-228" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
-<span id="cb2-229"><a href="#cb2-229" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
-<span id="cb2-230"><a href="#cb2-230" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllFluor',</span></span>
-<span id="cb2-231"><a href="#cb2-231" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChloroFluor_adj',</span></span>
-<span id="cb2-232"><a href="#cb2-232" aria-hidden="true" tabindex="-1"></a><span class="st">                'Fluorescence_adj',</span></span>
-<span id="cb2-233"><a href="#cb2-233" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
-<span id="cb2-234"><a href="#cb2-234" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
-<span id="cb2-235"><a href="#cb2-235" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
-<span id="cb2-236"><a href="#cb2-236" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-237"><a href="#cb2-237" aria-hidden="true" tabindex="-1"></a>    postgres_to_parquet(dataset_name<span class="op">=</span>dataset_name, sql<span class="op">=</span>sql, schema<span class="op">=</span>schema)</span>
-<span id="cb2-238"><a href="#cb2-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-180"><a href="#cb2-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-181"><a href="#cb2-181" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mooring_export() <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb2-182"><a href="#cb2-182" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"Mooring"</span></span>
+<span id="cb2-183"><a href="#cb2-183" aria-hidden="true" tabindex="-1"></a>    schema <span class="op">=</span> pa.schema(</span>
+<span id="cb2-184"><a href="#cb2-184" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="cb2-185"><a href="#cb2-185" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"area_id"</span>, pa.string()),</span>
+<span id="cb2-186"><a href="#cb2-186" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"location_id"</span>, pa.string()),</span>
+<span id="cb2-187"><a href="#cb2-187" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_desc"</span>, pa.string()),</span>
+<span id="cb2-188"><a href="#cb2-188" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_type"</span>, pa.string()),</span>
+<span id="cb2-189"><a href="#cb2-189" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"x_coord"</span>, pa.float64()),</span>
+<span id="cb2-190"><a href="#cb2-190" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"y_coord"</span>, pa.float64()),</span>
+<span id="cb2-191"><a href="#cb2-191" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"srid"</span>, pa.int64()),</span>
+<span id="cb2-192"><a href="#cb2-192" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coord_sys"</span>, pa.string()),</span>
+<span id="cb2-193"><a href="#cb2-193" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_method"</span>, pa.string()),</span>
+<span id="cb2-194"><a href="#cb2-194" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider"</span>, pa.string()),</span>
+<span id="cb2-195"><a href="#cb2-195" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_id"</span>, pa.string()),</span>
+<span id="cb2-196"><a href="#cb2-196" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_name"</span>, pa.string()),</span>
+<span id="cb2-197"><a href="#cb2-197" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_loc_id"</span>, pa.string()),</span>
+<span id="cb2-198"><a href="#cb2-198" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_doc"</span>, pa.string()),</span>
+<span id="cb2-199"><a href="#cb2-199" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_date"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
+<span id="cb2-200"><a href="#cb2-200" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coll_scheme"</span>, pa.string()),</span>
+<span id="cb2-201"><a href="#cb2-201" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_material"</span>, pa.string()),</span>
+<span id="cb2-202"><a href="#cb2-202" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_id"</span>, pa.string()),</span>
+<span id="cb2-203"><a href="#cb2-203" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_desc"</span>, pa.string()),</span>
+<span id="cb2-204"><a href="#cb2-204" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"upper_depth"</span>, pa.float64()),</span>
+<span id="cb2-205"><a href="#cb2-205" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lower_depth"</span>, pa.float64()),</span>
+<span id="cb2-206"><a href="#cb2-206" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"depth_units"</span>, pa.string()),</span>
+<span id="cb2-207"><a href="#cb2-207" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"comments"</span>, pa.string()),</span>
+<span id="cb2-208"><a href="#cb2-208" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"parameter"</span>, pa.string()),</span>
+<span id="cb2-209"><a href="#cb2-209" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"meas_method"</span>, pa.string()),</span>
+<span id="cb2-210"><a href="#cb2-210" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"replicate"</span>, pa.string()),</span>
+<span id="cb2-211"><a href="#cb2-211" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"result"</span>, pa.float64()),</span>
+<span id="cb2-212"><a href="#cb2-212" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"units"</span>, pa.string()),</span>
+<span id="cb2-213"><a href="#cb2-213" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"detected"</span>, pa.string()),</span>
+<span id="cb2-214"><a href="#cb2-214" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qualifiers"</span>, pa.string()),</span>
+<span id="cb2-215"><a href="#cb2-215" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"validator_flags"</span>, pa.string()),</span>
+<span id="cb2-216"><a href="#cb2-216" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qa_level"</span>, pa.string()),</span>
+<span id="cb2-217"><a href="#cb2-217" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"data_quality"</span>, pa.string()),</span>
+<span id="cb2-218"><a href="#cb2-218" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider_key"</span>, pa.string()),</span>
+<span id="cb2-219"><a href="#cb2-219" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"year"</span>, pa.int32()),</span>
+<span id="cb2-220"><a href="#cb2-220" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb2-221"><a href="#cb2-221" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-222"><a href="#cb2-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-223"><a href="#cb2-223" aria-hidden="true" tabindex="-1"></a>    sql <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb2-224"><a href="#cb2-224" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT</span></span>
+<span id="cb2-225"><a href="#cb2-225" aria-hidden="true" tabindex="-1"></a><span class="st">            *</span></span>
+<span id="cb2-226"><a href="#cb2-226" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM app.mooring</span></span>
+<span id="cb2-227"><a href="#cb2-227" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE</span></span>
+<span id="cb2-228"><a href="#cb2-228" aria-hidden="true" tabindex="-1"></a><span class="st">            parameter in (</span></span>
+<span id="cb2-229"><a href="#cb2-229" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
+<span id="cb2-230"><a href="#cb2-230" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
+<span id="cb2-231"><a href="#cb2-231" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllFluor',</span></span>
+<span id="cb2-232"><a href="#cb2-232" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChloroFluor_adj',</span></span>
+<span id="cb2-233"><a href="#cb2-233" aria-hidden="true" tabindex="-1"></a><span class="st">                'Fluorescence_adj',</span></span>
+<span id="cb2-234"><a href="#cb2-234" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
+<span id="cb2-235"><a href="#cb2-235" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
+<span id="cb2-236"><a href="#cb2-236" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb2-237"><a href="#cb2-237" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-238"><a href="#cb2-238" aria-hidden="true" tabindex="-1"></a>    postgres_to_parquet(dataset_name<span class="op">=</span>dataset_name, sql<span class="op">=</span>sql, schema<span class="op">=</span>schema)</span>
 <span id="cb2-239"><a href="#cb2-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-240"><a href="#cb2-240" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ctd_export():</span>
-<span id="cb2-241"><a href="#cb2-241" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"CTD"</span></span>
-<span id="cb2-242"><a href="#cb2-242" aria-hidden="true" tabindex="-1"></a>    schema <span class="op">=</span> pa.schema(</span>
-<span id="cb2-243"><a href="#cb2-243" aria-hidden="true" tabindex="-1"></a>        [</span>
-<span id="cb2-244"><a href="#cb2-244" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"area_id"</span>, pa.string()),</span>
-<span id="cb2-245"><a href="#cb2-245" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"location_id"</span>, pa.string()),</span>
-<span id="cb2-246"><a href="#cb2-246" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_desc"</span>, pa.string()),</span>
-<span id="cb2-247"><a href="#cb2-247" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_type"</span>, pa.string()),</span>
-<span id="cb2-248"><a href="#cb2-248" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"x_coord"</span>, pa.float64()),</span>
-<span id="cb2-249"><a href="#cb2-249" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"y_coord"</span>, pa.float64()),</span>
-<span id="cb2-250"><a href="#cb2-250" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"srid"</span>, pa.int64()),</span>
-<span id="cb2-251"><a href="#cb2-251" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coord_sys"</span>, pa.string()),</span>
-<span id="cb2-252"><a href="#cb2-252" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_method"</span>, pa.string()),</span>
-<span id="cb2-253"><a href="#cb2-253" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider"</span>, pa.string()),</span>
-<span id="cb2-254"><a href="#cb2-254" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_id"</span>, pa.string()),</span>
-<span id="cb2-255"><a href="#cb2-255" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_name"</span>, pa.string()),</span>
-<span id="cb2-256"><a href="#cb2-256" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_loc_id"</span>, pa.string()),</span>
-<span id="cb2-257"><a href="#cb2-257" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_doc"</span>, pa.string()),</span>
-<span id="cb2-258"><a href="#cb2-258" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_date"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
-<span id="cb2-259"><a href="#cb2-259" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coll_scheme"</span>, pa.string()),</span>
-<span id="cb2-260"><a href="#cb2-260" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_material"</span>, pa.string()),</span>
-<span id="cb2-261"><a href="#cb2-261" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_id"</span>, pa.string()),</span>
-<span id="cb2-262"><a href="#cb2-262" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_desc"</span>, pa.string()),</span>
-<span id="cb2-263"><a href="#cb2-263" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"upper_depth"</span>, pa.float64()),</span>
-<span id="cb2-264"><a href="#cb2-264" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lower_depth"</span>, pa.float64()),</span>
-<span id="cb2-265"><a href="#cb2-265" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"depth_units"</span>, pa.string()),</span>
-<span id="cb2-266"><a href="#cb2-266" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"comments"</span>, pa.string()),</span>
-<span id="cb2-267"><a href="#cb2-267" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"parameter"</span>, pa.string()),</span>
-<span id="cb2-268"><a href="#cb2-268" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"meas_method"</span>, pa.string()),</span>
-<span id="cb2-269"><a href="#cb2-269" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"replicate"</span>, pa.string()),</span>
-<span id="cb2-270"><a href="#cb2-270" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"result"</span>, pa.float64()),</span>
-<span id="cb2-271"><a href="#cb2-271" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"units"</span>, pa.string()),</span>
-<span id="cb2-272"><a href="#cb2-272" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"detected"</span>, pa.string()),</span>
-<span id="cb2-273"><a href="#cb2-273" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qualifiers"</span>, pa.string()),</span>
-<span id="cb2-274"><a href="#cb2-274" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"validator_flags"</span>, pa.string()),</span>
-<span id="cb2-275"><a href="#cb2-275" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qa_level"</span>, pa.string()),</span>
-<span id="cb2-276"><a href="#cb2-276" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"data_quality"</span>, pa.string()),</span>
-<span id="cb2-277"><a href="#cb2-277" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider_key"</span>, pa.string()),</span>
-<span id="cb2-278"><a href="#cb2-278" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"year"</span>, pa.int32()),</span>
-<span id="cb2-279"><a href="#cb2-279" aria-hidden="true" tabindex="-1"></a>        ]</span>
-<span id="cb2-280"><a href="#cb2-280" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-281"><a href="#cb2-281" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-282"><a href="#cb2-282" aria-hidden="true" tabindex="-1"></a>    sql <span class="op">=</span> <span class="st">"""</span></span>
-<span id="cb2-283"><a href="#cb2-283" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT</span></span>
-<span id="cb2-284"><a href="#cb2-284" aria-hidden="true" tabindex="-1"></a><span class="st">            *</span></span>
-<span id="cb2-285"><a href="#cb2-285" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM app.ctd</span></span>
-<span id="cb2-286"><a href="#cb2-286" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE</span></span>
-<span id="cb2-287"><a href="#cb2-287" aria-hidden="true" tabindex="-1"></a><span class="st">            parameter in (</span></span>
-<span id="cb2-288"><a href="#cb2-288" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
-<span id="cb2-289"><a href="#cb2-289" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
-<span id="cb2-290"><a href="#cb2-290" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllFluor',</span></span>
-<span id="cb2-291"><a href="#cb2-291" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChloroFluor_adj',</span></span>
-<span id="cb2-292"><a href="#cb2-292" aria-hidden="true" tabindex="-1"></a><span class="st">                'Fluorescence_adj',</span></span>
-<span id="cb2-293"><a href="#cb2-293" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
-<span id="cb2-294"><a href="#cb2-294" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
-<span id="cb2-295"><a href="#cb2-295" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
-<span id="cb2-296"><a href="#cb2-296" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-297"><a href="#cb2-297" aria-hidden="true" tabindex="-1"></a>    postgres_to_parquet(dataset_name<span class="op">=</span>dataset_name, sql<span class="op">=</span>sql, schema<span class="op">=</span>schema)</span>
-<span id="cb2-298"><a href="#cb2-298" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-240"><a href="#cb2-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-241"><a href="#cb2-241" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ctd_export() <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb2-242"><a href="#cb2-242" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"CTD"</span></span>
+<span id="cb2-243"><a href="#cb2-243" aria-hidden="true" tabindex="-1"></a>    schema <span class="op">=</span> pa.schema(</span>
+<span id="cb2-244"><a href="#cb2-244" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="cb2-245"><a href="#cb2-245" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"area_id"</span>, pa.string()),</span>
+<span id="cb2-246"><a href="#cb2-246" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"location_id"</span>, pa.string()),</span>
+<span id="cb2-247"><a href="#cb2-247" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_desc"</span>, pa.string()),</span>
+<span id="cb2-248"><a href="#cb2-248" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_type"</span>, pa.string()),</span>
+<span id="cb2-249"><a href="#cb2-249" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"x_coord"</span>, pa.float64()),</span>
+<span id="cb2-250"><a href="#cb2-250" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"y_coord"</span>, pa.float64()),</span>
+<span id="cb2-251"><a href="#cb2-251" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"srid"</span>, pa.int64()),</span>
+<span id="cb2-252"><a href="#cb2-252" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coord_sys"</span>, pa.string()),</span>
+<span id="cb2-253"><a href="#cb2-253" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_method"</span>, pa.string()),</span>
+<span id="cb2-254"><a href="#cb2-254" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider"</span>, pa.string()),</span>
+<span id="cb2-255"><a href="#cb2-255" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_id"</span>, pa.string()),</span>
+<span id="cb2-256"><a href="#cb2-256" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_name"</span>, pa.string()),</span>
+<span id="cb2-257"><a href="#cb2-257" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_loc_id"</span>, pa.string()),</span>
+<span id="cb2-258"><a href="#cb2-258" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_doc"</span>, pa.string()),</span>
+<span id="cb2-259"><a href="#cb2-259" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_date"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
+<span id="cb2-260"><a href="#cb2-260" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coll_scheme"</span>, pa.string()),</span>
+<span id="cb2-261"><a href="#cb2-261" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_material"</span>, pa.string()),</span>
+<span id="cb2-262"><a href="#cb2-262" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_id"</span>, pa.string()),</span>
+<span id="cb2-263"><a href="#cb2-263" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_desc"</span>, pa.string()),</span>
+<span id="cb2-264"><a href="#cb2-264" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"upper_depth"</span>, pa.float64()),</span>
+<span id="cb2-265"><a href="#cb2-265" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lower_depth"</span>, pa.float64()),</span>
+<span id="cb2-266"><a href="#cb2-266" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"depth_units"</span>, pa.string()),</span>
+<span id="cb2-267"><a href="#cb2-267" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"comments"</span>, pa.string()),</span>
+<span id="cb2-268"><a href="#cb2-268" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"parameter"</span>, pa.string()),</span>
+<span id="cb2-269"><a href="#cb2-269" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"meas_method"</span>, pa.string()),</span>
+<span id="cb2-270"><a href="#cb2-270" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"replicate"</span>, pa.string()),</span>
+<span id="cb2-271"><a href="#cb2-271" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"result"</span>, pa.float64()),</span>
+<span id="cb2-272"><a href="#cb2-272" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"units"</span>, pa.string()),</span>
+<span id="cb2-273"><a href="#cb2-273" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"detected"</span>, pa.string()),</span>
+<span id="cb2-274"><a href="#cb2-274" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qualifiers"</span>, pa.string()),</span>
+<span id="cb2-275"><a href="#cb2-275" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"validator_flags"</span>, pa.string()),</span>
+<span id="cb2-276"><a href="#cb2-276" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qa_level"</span>, pa.string()),</span>
+<span id="cb2-277"><a href="#cb2-277" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"data_quality"</span>, pa.string()),</span>
+<span id="cb2-278"><a href="#cb2-278" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider_key"</span>, pa.string()),</span>
+<span id="cb2-279"><a href="#cb2-279" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"year"</span>, pa.int32()),</span>
+<span id="cb2-280"><a href="#cb2-280" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb2-281"><a href="#cb2-281" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-282"><a href="#cb2-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-283"><a href="#cb2-283" aria-hidden="true" tabindex="-1"></a>    sql <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb2-284"><a href="#cb2-284" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT</span></span>
+<span id="cb2-285"><a href="#cb2-285" aria-hidden="true" tabindex="-1"></a><span class="st">            *</span></span>
+<span id="cb2-286"><a href="#cb2-286" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM app.ctd</span></span>
+<span id="cb2-287"><a href="#cb2-287" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE</span></span>
+<span id="cb2-288"><a href="#cb2-288" aria-hidden="true" tabindex="-1"></a><span class="st">            parameter in (</span></span>
+<span id="cb2-289"><a href="#cb2-289" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
+<span id="cb2-290"><a href="#cb2-290" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
+<span id="cb2-291"><a href="#cb2-291" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllFluor',</span></span>
+<span id="cb2-292"><a href="#cb2-292" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChloroFluor_adj',</span></span>
+<span id="cb2-293"><a href="#cb2-293" aria-hidden="true" tabindex="-1"></a><span class="st">                'Fluorescence_adj',</span></span>
+<span id="cb2-294"><a href="#cb2-294" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
+<span id="cb2-295"><a href="#cb2-295" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
+<span id="cb2-296"><a href="#cb2-296" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb2-297"><a href="#cb2-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-298"><a href="#cb2-298" aria-hidden="true" tabindex="-1"></a>    postgres_to_parquet(dataset_name<span class="op">=</span>dataset_name, sql<span class="op">=</span>sql, schema<span class="op">=</span>schema)</span>
 <span id="cb2-299"><a href="#cb2-299" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-300"><a href="#cb2-300" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> bottle_export():</span>
-<span id="cb2-301"><a href="#cb2-301" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"Bottle"</span></span>
-<span id="cb2-302"><a href="#cb2-302" aria-hidden="true" tabindex="-1"></a>    schema <span class="op">=</span> pa.schema(</span>
-<span id="cb2-303"><a href="#cb2-303" aria-hidden="true" tabindex="-1"></a>        [</span>
-<span id="cb2-304"><a href="#cb2-304" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"area_id"</span>, pa.string()),</span>
-<span id="cb2-305"><a href="#cb2-305" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"location_id"</span>, pa.string()),</span>
-<span id="cb2-306"><a href="#cb2-306" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_desc"</span>, pa.string()),</span>
-<span id="cb2-307"><a href="#cb2-307" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_type"</span>, pa.string()),</span>
-<span id="cb2-308"><a href="#cb2-308" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_geom"</span>, pa.string()),</span>
-<span id="cb2-309"><a href="#cb2-309" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"x_coord"</span>, pa.float64()),</span>
-<span id="cb2-310"><a href="#cb2-310" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"y_coord"</span>, pa.float64()),</span>
-<span id="cb2-311"><a href="#cb2-311" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"srid"</span>, pa.int64()),</span>
-<span id="cb2-312"><a href="#cb2-312" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coord_sys"</span>, pa.string()),</span>
-<span id="cb2-313"><a href="#cb2-313" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_method"</span>, pa.string()),</span>
-<span id="cb2-314"><a href="#cb2-314" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider"</span>, pa.string()),</span>
-<span id="cb2-315"><a href="#cb2-315" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_id"</span>, pa.string()),</span>
-<span id="cb2-316"><a href="#cb2-316" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_name"</span>, pa.string()),</span>
-<span id="cb2-317"><a href="#cb2-317" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_doc"</span>, pa.string()),</span>
-<span id="cb2-318"><a href="#cb2-318" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_date"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
-<span id="cb2-319"><a href="#cb2-319" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coll_scheme"</span>, pa.string()),</span>
-<span id="cb2-320"><a href="#cb2-320" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_material"</span>, pa.string()),</span>
-<span id="cb2-321"><a href="#cb2-321" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_id"</span>, pa.string()),</span>
-<span id="cb2-322"><a href="#cb2-322" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_desc"</span>, pa.string()),</span>
-<span id="cb2-323"><a href="#cb2-323" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"original_sample_id"</span>, pa.string()),</span>
-<span id="cb2-324"><a href="#cb2-324" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"upper_depth"</span>, pa.float64()),</span>
-<span id="cb2-325"><a href="#cb2-325" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lower_depth"</span>, pa.float64()),</span>
-<span id="cb2-326"><a href="#cb2-326" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"depth_units"</span>, pa.string()),</span>
-<span id="cb2-327"><a href="#cb2-327" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"split_type"</span>, pa.string()),</span>
-<span id="cb2-328"><a href="#cb2-328" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_no"</span>, pa.string()),</span>
-<span id="cb2-329"><a href="#cb2-329" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lab"</span>, pa.string()),</span>
-<span id="cb2-330"><a href="#cb2-330" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lab_pkg"</span>, pa.string()),</span>
-<span id="cb2-331"><a href="#cb2-331" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"material"</span>, pa.string()),</span>
-<span id="cb2-332"><a href="#cb2-332" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"material_analyzed"</span>, pa.string()),</span>
-<span id="cb2-333"><a href="#cb2-333" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"labsample"</span>, pa.string()),</span>
-<span id="cb2-334"><a href="#cb2-334" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lab_rep"</span>, pa.string()),</span>
-<span id="cb2-335"><a href="#cb2-335" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"method_code"</span>, pa.string()),</span>
-<span id="cb2-336"><a href="#cb2-336" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"method_desc"</span>, pa.string()),</span>
-<span id="cb2-337"><a href="#cb2-337" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"chem_class"</span>, pa.string()),</span>
-<span id="cb2-338"><a href="#cb2-338" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"cas_rn"</span>, pa.string()),</span>
-<span id="cb2-339"><a href="#cb2-339" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"analyte"</span>, pa.string()),</span>
-<span id="cb2-340"><a href="#cb2-340" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"analyte_name"</span>, pa.string()),</span>
-<span id="cb2-341"><a href="#cb2-341" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"result"</span>, pa.float64()),</span>
-<span id="cb2-342"><a href="#cb2-342" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qualifiers"</span>, pa.string()),</span>
-<span id="cb2-343"><a href="#cb2-343" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lab_flags"</span>, pa.string()),</span>
-<span id="cb2-344"><a href="#cb2-344" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"validator_flags"</span>, pa.string()),</span>
-<span id="cb2-345"><a href="#cb2-345" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"detected"</span>, pa.string()),</span>
-<span id="cb2-346"><a href="#cb2-346" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"detection_limit"</span>, pa.float64()),</span>
-<span id="cb2-347"><a href="#cb2-347" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"quantification_limit"</span>, pa.float64()),</span>
-<span id="cb2-348"><a href="#cb2-348" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"reporting_limit"</span>, pa.float64()),</span>
-<span id="cb2-349"><a href="#cb2-349" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"units"</span>, pa.string()),</span>
-<span id="cb2-350"><a href="#cb2-350" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"meas_basis"</span>, pa.string()),</span>
-<span id="cb2-351"><a href="#cb2-351" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"fraction"</span>, pa.string()),</span>
-<span id="cb2-352"><a href="#cb2-352" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"dilution_factor"</span>, pa.float64()),</span>
-<span id="cb2-353"><a href="#cb2-353" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"data_quality"</span>, pa.string()),</span>
-<span id="cb2-354"><a href="#cb2-354" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qa_level"</span>, pa.string()),</span>
-<span id="cb2-355"><a href="#cb2-355" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"date_analyzed"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
-<span id="cb2-356"><a href="#cb2-356" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"date_extracted"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
-<span id="cb2-357"><a href="#cb2-357" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"doc_file"</span>, pa.string()),</span>
-<span id="cb2-358"><a href="#cb2-358" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"comments"</span>, pa.string()),</span>
-<span id="cb2-359"><a href="#cb2-359" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider_key"</span>, pa.string()),</span>
-<span id="cb2-360"><a href="#cb2-360" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"year"</span>, pa.int32()),</span>
-<span id="cb2-361"><a href="#cb2-361" aria-hidden="true" tabindex="-1"></a>        ]</span>
-<span id="cb2-362"><a href="#cb2-362" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-363"><a href="#cb2-363" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-364"><a href="#cb2-364" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"Bottle"</span></span>
-<span id="cb2-365"><a href="#cb2-365" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-366"><a href="#cb2-366" aria-hidden="true" tabindex="-1"></a>    sql <span class="op">=</span> <span class="st">"""</span></span>
-<span id="cb2-367"><a href="#cb2-367" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT</span></span>
-<span id="cb2-368"><a href="#cb2-368" aria-hidden="true" tabindex="-1"></a><span class="st">            *</span></span>
-<span id="cb2-369"><a href="#cb2-369" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM app.bottle</span></span>
-<span id="cb2-370"><a href="#cb2-370" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE</span></span>
-<span id="cb2-371"><a href="#cb2-371" aria-hidden="true" tabindex="-1"></a><span class="st">            analyte in (</span></span>
-<span id="cb2-372"><a href="#cb2-372" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
-<span id="cb2-373"><a href="#cb2-373" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllA',</span></span>
-<span id="cb2-374"><a href="#cb2-374" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
-<span id="cb2-375"><a href="#cb2-375" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll_Avg',</span></span>
-<span id="cb2-376"><a href="#cb2-376" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
-<span id="cb2-377"><a href="#cb2-377" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
-<span id="cb2-378"><a href="#cb2-378" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
-<span id="cb2-379"><a href="#cb2-379" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-380"><a href="#cb2-380" aria-hidden="true" tabindex="-1"></a>    postgres_to_parquet(dataset_name<span class="op">=</span>dataset_name, sql<span class="op">=</span>sql, schema<span class="op">=</span>schema)</span>
-<span id="cb2-381"><a href="#cb2-381" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-300"><a href="#cb2-300" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-301"><a href="#cb2-301" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> bottle_export() <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb2-302"><a href="#cb2-302" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"Bottle"</span></span>
+<span id="cb2-303"><a href="#cb2-303" aria-hidden="true" tabindex="-1"></a>    schema <span class="op">=</span> pa.schema(</span>
+<span id="cb2-304"><a href="#cb2-304" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="cb2-305"><a href="#cb2-305" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"area_id"</span>, pa.string()),</span>
+<span id="cb2-306"><a href="#cb2-306" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"location_id"</span>, pa.string()),</span>
+<span id="cb2-307"><a href="#cb2-307" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_desc"</span>, pa.string()),</span>
+<span id="cb2-308"><a href="#cb2-308" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_type"</span>, pa.string()),</span>
+<span id="cb2-309"><a href="#cb2-309" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_geom"</span>, pa.string()),</span>
+<span id="cb2-310"><a href="#cb2-310" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"x_coord"</span>, pa.float64()),</span>
+<span id="cb2-311"><a href="#cb2-311" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"y_coord"</span>, pa.float64()),</span>
+<span id="cb2-312"><a href="#cb2-312" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"srid"</span>, pa.int64()),</span>
+<span id="cb2-313"><a href="#cb2-313" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coord_sys"</span>, pa.string()),</span>
+<span id="cb2-314"><a href="#cb2-314" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"loc_method"</span>, pa.string()),</span>
+<span id="cb2-315"><a href="#cb2-315" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider"</span>, pa.string()),</span>
+<span id="cb2-316"><a href="#cb2-316" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_id"</span>, pa.string()),</span>
+<span id="cb2-317"><a href="#cb2-317" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"study_name"</span>, pa.string()),</span>
+<span id="cb2-318"><a href="#cb2-318" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_doc"</span>, pa.string()),</span>
+<span id="cb2-319"><a href="#cb2-319" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_date"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
+<span id="cb2-320"><a href="#cb2-320" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"coll_scheme"</span>, pa.string()),</span>
+<span id="cb2-321"><a href="#cb2-321" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_material"</span>, pa.string()),</span>
+<span id="cb2-322"><a href="#cb2-322" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_id"</span>, pa.string()),</span>
+<span id="cb2-323"><a href="#cb2-323" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_desc"</span>, pa.string()),</span>
+<span id="cb2-324"><a href="#cb2-324" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"original_sample_id"</span>, pa.string()),</span>
+<span id="cb2-325"><a href="#cb2-325" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"upper_depth"</span>, pa.float64()),</span>
+<span id="cb2-326"><a href="#cb2-326" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lower_depth"</span>, pa.float64()),</span>
+<span id="cb2-327"><a href="#cb2-327" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"depth_units"</span>, pa.string()),</span>
+<span id="cb2-328"><a href="#cb2-328" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"split_type"</span>, pa.string()),</span>
+<span id="cb2-329"><a href="#cb2-329" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"sample_no"</span>, pa.string()),</span>
+<span id="cb2-330"><a href="#cb2-330" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lab"</span>, pa.string()),</span>
+<span id="cb2-331"><a href="#cb2-331" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lab_pkg"</span>, pa.string()),</span>
+<span id="cb2-332"><a href="#cb2-332" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"material"</span>, pa.string()),</span>
+<span id="cb2-333"><a href="#cb2-333" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"material_analyzed"</span>, pa.string()),</span>
+<span id="cb2-334"><a href="#cb2-334" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"labsample"</span>, pa.string()),</span>
+<span id="cb2-335"><a href="#cb2-335" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lab_rep"</span>, pa.string()),</span>
+<span id="cb2-336"><a href="#cb2-336" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"method_code"</span>, pa.string()),</span>
+<span id="cb2-337"><a href="#cb2-337" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"method_desc"</span>, pa.string()),</span>
+<span id="cb2-338"><a href="#cb2-338" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"chem_class"</span>, pa.string()),</span>
+<span id="cb2-339"><a href="#cb2-339" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"cas_rn"</span>, pa.string()),</span>
+<span id="cb2-340"><a href="#cb2-340" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"analyte"</span>, pa.string()),</span>
+<span id="cb2-341"><a href="#cb2-341" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"analyte_name"</span>, pa.string()),</span>
+<span id="cb2-342"><a href="#cb2-342" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"result"</span>, pa.float64()),</span>
+<span id="cb2-343"><a href="#cb2-343" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qualifiers"</span>, pa.string()),</span>
+<span id="cb2-344"><a href="#cb2-344" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"lab_flags"</span>, pa.string()),</span>
+<span id="cb2-345"><a href="#cb2-345" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"validator_flags"</span>, pa.string()),</span>
+<span id="cb2-346"><a href="#cb2-346" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"detected"</span>, pa.string()),</span>
+<span id="cb2-347"><a href="#cb2-347" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"detection_limit"</span>, pa.float64()),</span>
+<span id="cb2-348"><a href="#cb2-348" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"quantification_limit"</span>, pa.float64()),</span>
+<span id="cb2-349"><a href="#cb2-349" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"reporting_limit"</span>, pa.float64()),</span>
+<span id="cb2-350"><a href="#cb2-350" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"units"</span>, pa.string()),</span>
+<span id="cb2-351"><a href="#cb2-351" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"meas_basis"</span>, pa.string()),</span>
+<span id="cb2-352"><a href="#cb2-352" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"fraction"</span>, pa.string()),</span>
+<span id="cb2-353"><a href="#cb2-353" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"dilution_factor"</span>, pa.float64()),</span>
+<span id="cb2-354"><a href="#cb2-354" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"data_quality"</span>, pa.string()),</span>
+<span id="cb2-355"><a href="#cb2-355" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"qa_level"</span>, pa.string()),</span>
+<span id="cb2-356"><a href="#cb2-356" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"date_analyzed"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
+<span id="cb2-357"><a href="#cb2-357" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"date_extracted"</span>, pa.timestamp(<span class="st">"us"</span>)),</span>
+<span id="cb2-358"><a href="#cb2-358" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"doc_file"</span>, pa.string()),</span>
+<span id="cb2-359"><a href="#cb2-359" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"comments"</span>, pa.string()),</span>
+<span id="cb2-360"><a href="#cb2-360" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"provider_key"</span>, pa.string()),</span>
+<span id="cb2-361"><a href="#cb2-361" aria-hidden="true" tabindex="-1"></a>            (<span class="st">"year"</span>, pa.int32()),</span>
+<span id="cb2-362"><a href="#cb2-362" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb2-363"><a href="#cb2-363" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-364"><a href="#cb2-364" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-365"><a href="#cb2-365" aria-hidden="true" tabindex="-1"></a>    dataset_name <span class="op">=</span> <span class="st">"Bottle"</span></span>
+<span id="cb2-366"><a href="#cb2-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-367"><a href="#cb2-367" aria-hidden="true" tabindex="-1"></a>    sql <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb2-368"><a href="#cb2-368" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT</span></span>
+<span id="cb2-369"><a href="#cb2-369" aria-hidden="true" tabindex="-1"></a><span class="st">            *</span></span>
+<span id="cb2-370"><a href="#cb2-370" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM app.bottle</span></span>
+<span id="cb2-371"><a href="#cb2-371" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE</span></span>
+<span id="cb2-372"><a href="#cb2-372" aria-hidden="true" tabindex="-1"></a><span class="st">            analyte in (</span></span>
+<span id="cb2-373"><a href="#cb2-373" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
+<span id="cb2-374"><a href="#cb2-374" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllA',</span></span>
+<span id="cb2-375"><a href="#cb2-375" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
+<span id="cb2-376"><a href="#cb2-376" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll_Avg',</span></span>
+<span id="cb2-377"><a href="#cb2-377" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
+<span id="cb2-378"><a href="#cb2-378" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
+<span id="cb2-379"><a href="#cb2-379" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
+<span id="cb2-380"><a href="#cb2-380" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-381"><a href="#cb2-381" aria-hidden="true" tabindex="-1"></a>    postgres_to_parquet(dataset_name<span class="op">=</span>dataset_name, sql<span class="op">=</span>sql, schema<span class="op">=</span>schema)</span>
 <span id="cb2-382"><a href="#cb2-382" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-383"><a href="#cb2-383" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
-<span id="cb2-384"><a href="#cb2-384" aria-hidden="true" tabindex="-1"></a>    args <span class="op">=</span> clparser().parse_args()</span>
-<span id="cb2-385"><a href="#cb2-385" aria-hidden="true" tabindex="-1"></a>    _bottle_export <span class="op">=</span> <span class="va">False</span></span>
-<span id="cb2-386"><a href="#cb2-386" aria-hidden="true" tabindex="-1"></a>    _mooring_export <span class="op">=</span> <span class="va">False</span></span>
-<span id="cb2-387"><a href="#cb2-387" aria-hidden="true" tabindex="-1"></a>    _ctd_export <span class="op">=</span> <span class="va">False</span></span>
-<span id="cb2-388"><a href="#cb2-388" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> args.dataset <span class="op">==</span> <span class="st">"bottle"</span> <span class="kw">or</span> args.dataset <span class="op">==</span> <span class="st">"all"</span>:</span>
-<span id="cb2-389"><a href="#cb2-389" aria-hidden="true" tabindex="-1"></a>        _bottle_export <span class="op">=</span> <span class="va">True</span></span>
-<span id="cb2-390"><a href="#cb2-390" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> args.dataset <span class="op">==</span> <span class="st">"mooring"</span> <span class="kw">or</span> args.dataset <span class="op">==</span> <span class="st">"all"</span>:</span>
-<span id="cb2-391"><a href="#cb2-391" aria-hidden="true" tabindex="-1"></a>        _mooring_export <span class="op">=</span> <span class="va">True</span></span>
-<span id="cb2-392"><a href="#cb2-392" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> args.dataset <span class="op">==</span> <span class="st">"ctd"</span> <span class="kw">or</span> args.dataset <span class="op">==</span> <span class="st">"all"</span>:</span>
-<span id="cb2-393"><a href="#cb2-393" aria-hidden="true" tabindex="-1"></a>        _ctd_export <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb2-383"><a href="#cb2-383" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-384"><a href="#cb2-384" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> summary_export() <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb2-385"><a href="#cb2-385" aria-hidden="true" tabindex="-1"></a>    outfile <span class="op">=</span> (</span>
+<span id="cb2-386"><a href="#cb2-386" aria-hidden="true" tabindex="-1"></a>        OUTDIR</span>
+<span id="cb2-387"><a href="#cb2-387" aria-hidden="true" tabindex="-1"></a>        <span class="op">/</span> <span class="ss">f"Phyto-Indicator-Summary_</span><span class="sc">{</span>datetime<span class="sc">.</span>now()<span class="sc">.</span>date()<span class="sc">.</span>strftime(<span class="st">'%Y%m</span><span class="sc">%d</span><span class="st">'</span>)<span class="sc">}</span><span class="ss">.csv"</span></span>
+<span id="cb2-388"><a href="#cb2-388" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-389"><a href="#cb2-389" aria-hidden="true" tabindex="-1"></a>    pl.read_database_uri(</span>
+<span id="cb2-390"><a href="#cb2-390" aria-hidden="true" tabindex="-1"></a>        <span class="st">"SELECT * FROM app.summary"</span>,</span>
+<span id="cb2-391"><a href="#cb2-391" aria-hidden="true" tabindex="-1"></a>        uri<span class="op">=</span><span class="ss">f"postgresql://</span><span class="sc">{</span>PG_USER<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>PG_PASSWORD<span class="sc">}</span><span class="ss">@</span><span class="sc">{</span>PG_HOST<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>PG_DATABASE<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb2-392"><a href="#cb2-392" aria-hidden="true" tabindex="-1"></a>        engine<span class="op">=</span><span class="st">"connectorx"</span>,</span>
+<span id="cb2-393"><a href="#cb2-393" aria-hidden="true" tabindex="-1"></a>    ).write_csv(outfile, separator<span class="op">=</span><span class="st">","</span>)</span>
 <span id="cb2-394"><a href="#cb2-394" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-395"><a href="#cb2-395" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="st">"Starting export..."</span>)</span>
-<span id="cb2-396"><a href="#cb2-396" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Bottle Export  : </span><span class="sc">{</span>_bottle_export<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-397"><a href="#cb2-397" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Mooring Export : </span><span class="sc">{</span>_mooring_export<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-398"><a href="#cb2-398" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"CTD Export     : </span><span class="sc">{</span>_ctd_export<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-399"><a href="#cb2-399" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-400"><a href="#cb2-400" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _bottle_export:</span>
-<span id="cb2-401"><a href="#cb2-401" aria-hidden="true" tabindex="-1"></a>        bottle_export()</span>
-<span id="cb2-402"><a href="#cb2-402" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _mooring_export:</span>
-<span id="cb2-403"><a href="#cb2-403" aria-hidden="true" tabindex="-1"></a>        mooring_export()</span>
-<span id="cb2-404"><a href="#cb2-404" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _ctd_export:</span>
-<span id="cb2-405"><a href="#cb2-405" aria-hidden="true" tabindex="-1"></a>        ctd_export()</span>
-<span id="cb2-406"><a href="#cb2-406" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-407"><a href="#cb2-407" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Compressing output directory to </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">..."</span>)</span>
-<span id="cb2-408"><a href="#cb2-408" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> tarfile.<span class="bu">open</span>(GZ_TARFILE, <span class="st">"w:gz"</span>) <span class="im">as</span> tar:</span>
-<span id="cb2-409"><a href="#cb2-409" aria-hidden="true" tabindex="-1"></a>        tar.add(OUTDIR, arcname<span class="op">=</span>OUTDIR.name)</span>
+<span id="cb2-395"><a href="#cb2-395" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-396"><a href="#cb2-396" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb2-397"><a href="#cb2-397" aria-hidden="true" tabindex="-1"></a>    args <span class="op">=</span> clparser().parse_args()</span>
+<span id="cb2-398"><a href="#cb2-398" aria-hidden="true" tabindex="-1"></a>    _bottle_export <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb2-399"><a href="#cb2-399" aria-hidden="true" tabindex="-1"></a>    _mooring_export <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb2-400"><a href="#cb2-400" aria-hidden="true" tabindex="-1"></a>    _ctd_export <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb2-401"><a href="#cb2-401" aria-hidden="true" tabindex="-1"></a>    _summary_export <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb2-402"><a href="#cb2-402" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> args.dataset <span class="op">==</span> <span class="st">"bottle"</span> <span class="kw">or</span> args.dataset <span class="op">==</span> <span class="st">"all"</span>:</span>
+<span id="cb2-403"><a href="#cb2-403" aria-hidden="true" tabindex="-1"></a>        _bottle_export <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb2-404"><a href="#cb2-404" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> args.dataset <span class="op">==</span> <span class="st">"mooring"</span> <span class="kw">or</span> args.dataset <span class="op">==</span> <span class="st">"all"</span>:</span>
+<span id="cb2-405"><a href="#cb2-405" aria-hidden="true" tabindex="-1"></a>        _mooring_export <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb2-406"><a href="#cb2-406" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> args.dataset <span class="op">==</span> <span class="st">"ctd"</span> <span class="kw">or</span> args.dataset <span class="op">==</span> <span class="st">"all"</span>:</span>
+<span id="cb2-407"><a href="#cb2-407" aria-hidden="true" tabindex="-1"></a>        _ctd_export <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb2-408"><a href="#cb2-408" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> args.dataset <span class="op">==</span> <span class="st">"summary"</span> <span class="kw">or</span> args.dataset <span class="op">==</span> <span class="st">"all"</span>:</span>
+<span id="cb2-409"><a href="#cb2-409" aria-hidden="true" tabindex="-1"></a>        _summary_export <span class="op">=</span> <span class="va">True</span></span>
 <span id="cb2-410"><a href="#cb2-410" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-411"><a href="#cb2-411" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Get the size of the tar.gz file</span></span>
-<span id="cb2-412"><a href="#cb2-412" aria-hidden="true" tabindex="-1"></a>    tar_gz_size <span class="op">=</span> GZ_TARFILE.stat().st_size</span>
-<span id="cb2-413"><a href="#cb2-413" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-414"><a href="#cb2-414" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size<span class="sc">}</span><span class="ss"> bytes"</span>)</span>
-<span id="cb2-415"><a href="#cb2-415" aria-hidden="true" tabindex="-1"></a>    tar_gz_size_kb <span class="op">=</span> tar_gz_size <span class="op">/</span> <span class="dv">1000</span></span>
-<span id="cb2-416"><a href="#cb2-416" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size_kb<span class="sc">}</span><span class="ss"> KB"</span>)</span>
-<span id="cb2-417"><a href="#cb2-417" aria-hidden="true" tabindex="-1"></a>    tar_gz_size_mb <span class="op">=</span> tar_gz_size_kb <span class="op">/</span> <span class="dv">1000</span></span>
-<span id="cb2-418"><a href="#cb2-418" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size_mb<span class="sc">}</span><span class="ss"> MB"</span>)</span>
-<span id="cb2-419"><a href="#cb2-419" aria-hidden="true" tabindex="-1"></a>    tar_gz_size_gb <span class="op">=</span> tar_gz_size_mb <span class="op">/</span> <span class="dv">1000</span></span>
-<span id="cb2-420"><a href="#cb2-420" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size_gb<span class="sc">}</span><span class="ss"> GB"</span>)</span>
-<span id="cb2-421"><a href="#cb2-421" aria-hidden="true" tabindex="-1"></a>    tar_gz_size_tb <span class="op">=</span> tar_gz_size_gb <span class="op">/</span> <span class="dv">1000</span></span>
-<span id="cb2-422"><a href="#cb2-422" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size_tb<span class="sc">}</span><span class="ss"> TB"</span>)</span>
-<span id="cb2-423"><a href="#cb2-423" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-424"><a href="#cb2-424" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-425"><a href="#cb2-425" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
-<span id="cb2-426"><a href="#cb2-426" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
-<span id="cb2-427"><a href="#cb2-427" aria-hidden="true" tabindex="-1"></a>        conn <span class="op">=</span> psycopg2.<span class="ex">connect</span>(</span>
-<span id="cb2-428"><a href="#cb2-428" aria-hidden="true" tabindex="-1"></a>            host<span class="op">=</span>PG_HOST, database<span class="op">=</span>PG_DATABASE, user<span class="op">=</span>PG_USER, password<span class="op">=</span>PG_PASSWORD</span>
-<span id="cb2-429"><a href="#cb2-429" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb2-430"><a href="#cb2-430" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> err:</span>
-<span id="cb2-431"><a href="#cb2-431" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> err</span>
+<span id="cb2-411"><a href="#cb2-411" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="st">"Starting export..."</span>)</span>
+<span id="cb2-412"><a href="#cb2-412" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Summary Export : </span><span class="sc">{</span>_summary_export<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-413"><a href="#cb2-413" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Bottle Export  : </span><span class="sc">{</span>_bottle_export<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-414"><a href="#cb2-414" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Mooring Export : </span><span class="sc">{</span>_mooring_export<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-415"><a href="#cb2-415" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"CTD Export     : </span><span class="sc">{</span>_ctd_export<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-416"><a href="#cb2-416" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-417"><a href="#cb2-417" aria-hidden="true" tabindex="-1"></a>    start_time <span class="op">=</span> datetime.now()</span>
+<span id="cb2-418"><a href="#cb2-418" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _summary_export:</span>
+<span id="cb2-419"><a href="#cb2-419" aria-hidden="true" tabindex="-1"></a>        summary_export()</span>
+<span id="cb2-420"><a href="#cb2-420" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _bottle_export:</span>
+<span id="cb2-421"><a href="#cb2-421" aria-hidden="true" tabindex="-1"></a>        bottle_export()</span>
+<span id="cb2-422"><a href="#cb2-422" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _mooring_export:</span>
+<span id="cb2-423"><a href="#cb2-423" aria-hidden="true" tabindex="-1"></a>        mooring_export()</span>
+<span id="cb2-424"><a href="#cb2-424" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _ctd_export:</span>
+<span id="cb2-425"><a href="#cb2-425" aria-hidden="true" tabindex="-1"></a>        ctd_export()</span>
+<span id="cb2-426"><a href="#cb2-426" aria-hidden="true" tabindex="-1"></a>    end_time <span class="op">=</span> datetime.now()</span>
+<span id="cb2-427"><a href="#cb2-427" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Export completed in </span><span class="sc">{</span>(end_time <span class="op">-</span> start_time) <span class="op">/</span> <span class="dv">60</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-428"><a href="#cb2-428" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-429"><a href="#cb2-429" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Compressing output directory to </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">..."</span>)</span>
+<span id="cb2-430"><a href="#cb2-430" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> tarfile.<span class="bu">open</span>(GZ_TARFILE, <span class="st">"w:gz"</span>) <span class="im">as</span> tar:</span>
+<span id="cb2-431"><a href="#cb2-431" aria-hidden="true" tabindex="-1"></a>        tar.add(OUTDIR, arcname<span class="op">=</span>OUTDIR.name)</span>
 <span id="cb2-432"><a href="#cb2-432" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-433"><a href="#cb2-433" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
-<span id="cb2-434"><a href="#cb2-434" aria-hidden="true" tabindex="-1"></a>        main()</span>
-<span id="cb2-435"><a href="#cb2-435" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> err:</span>
-<span id="cb2-436"><a href="#cb2-436" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> err</span>
-<span id="cb2-437"><a href="#cb2-437" aria-hidden="true" tabindex="-1"></a>    <span class="cf">finally</span>:</span>
-<span id="cb2-438"><a href="#cb2-438" aria-hidden="true" tabindex="-1"></a>        conn.close()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-433"><a href="#cb2-433" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Get the size of the tar.gz file</span></span>
+<span id="cb2-434"><a href="#cb2-434" aria-hidden="true" tabindex="-1"></a>    tar_gz_size <span class="op">=</span> GZ_TARFILE.stat().st_size</span>
+<span id="cb2-435"><a href="#cb2-435" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-436"><a href="#cb2-436" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size<span class="sc">}</span><span class="ss"> bytes"</span>)</span>
+<span id="cb2-437"><a href="#cb2-437" aria-hidden="true" tabindex="-1"></a>    tar_gz_size_kb <span class="op">=</span> tar_gz_size <span class="op">/</span> <span class="dv">1000</span></span>
+<span id="cb2-438"><a href="#cb2-438" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size_kb<span class="sc">}</span><span class="ss"> KB"</span>)</span>
+<span id="cb2-439"><a href="#cb2-439" aria-hidden="true" tabindex="-1"></a>    tar_gz_size_mb <span class="op">=</span> tar_gz_size_kb <span class="op">/</span> <span class="dv">1000</span></span>
+<span id="cb2-440"><a href="#cb2-440" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size_mb<span class="sc">}</span><span class="ss"> MB"</span>)</span>
+<span id="cb2-441"><a href="#cb2-441" aria-hidden="true" tabindex="-1"></a>    tar_gz_size_gb <span class="op">=</span> tar_gz_size_mb <span class="op">/</span> <span class="dv">1000</span></span>
+<span id="cb2-442"><a href="#cb2-442" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size_gb<span class="sc">}</span><span class="ss"> GB"</span>)</span>
+<span id="cb2-443"><a href="#cb2-443" aria-hidden="true" tabindex="-1"></a>    tar_gz_size_tb <span class="op">=</span> tar_gz_size_gb <span class="op">/</span> <span class="dv">1000</span></span>
+<span id="cb2-444"><a href="#cb2-444" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Size of </span><span class="sc">{</span>GZ_TARFILE<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>tar_gz_size_tb<span class="sc">}</span><span class="ss"> TB"</span>)</span>
+<span id="cb2-445"><a href="#cb2-445" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-446"><a href="#cb2-446" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-447"><a href="#cb2-447" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb2-448"><a href="#cb2-448" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb2-449"><a href="#cb2-449" aria-hidden="true" tabindex="-1"></a>        conn <span class="op">=</span> psycopg2.<span class="ex">connect</span>(</span>
+<span id="cb2-450"><a href="#cb2-450" aria-hidden="true" tabindex="-1"></a>            host<span class="op">=</span>PG_HOST, database<span class="op">=</span>PG_DATABASE, user<span class="op">=</span>PG_USER, password<span class="op">=</span>PG_PASSWORD</span>
+<span id="cb2-451"><a href="#cb2-451" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-452"><a href="#cb2-452" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> err:</span>
+<span id="cb2-453"><a href="#cb2-453" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> err</span>
+<span id="cb2-454"><a href="#cb2-454" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-455"><a href="#cb2-455" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb2-456"><a href="#cb2-456" aria-hidden="true" tabindex="-1"></a>        main()</span>
+<span id="cb2-457"><a href="#cb2-457" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> err:</span>
+<span id="cb2-458"><a href="#cb2-458" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> err</span>
+<span id="cb2-459"><a href="#cb2-459" aria-hidden="true" tabindex="-1"></a>    <span class="cf">finally</span>:</span>
+<span id="cb2-460"><a href="#cb2-460" aria-hidden="true" tabindex="-1"></a>        conn.close()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 
 
 <script type="ojs-module-contents">
