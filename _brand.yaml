@@ -19,8 +19,11 @@ logo:
     gsi-logo-md:
       path: static/logo.svg
       alt: "GSI Environmental Inc."
+    phyto-logo-md:
+      path: static/logo_phytoindicator.svg
+      alt: "Puget Sound Indicators"
   small: gsi-logo-sm
-  medium: gsi-logo-md
+  medium: phyto-logo-md
 
 # https://quarto.org/docs/dashboards/theming.html#sass-variables
 defaults: 

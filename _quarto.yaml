@@ -42,6 +42,9 @@ website:
     left: "&copy; 2025 [GSI Environmental Inc.](https://gsienv.com)"
     center: |
       [![](/static/logo.svg){fig-alt="GSI Environmental Inc." width=65px}](https://gsienv.com)
+      [![](/static/logos/puget-sound-partnership.png){fig-alt="PugetSound Partnership" width=100px}](https://www.psp.wa.gov/)
+      [![](/static/logos/university-of-washington.png){fig-alt="University of Washington" width=70px}](https://www.washington.edu/)
+      [![](/static/logos/wa-ecology.svg){fig-alt="Washington Ecology" width=100px}](https://ecology.wa.gov/water-shorelines/shoreline-coastal-management/padilla-bay-reserve)
     right: |
       Built with [Quarto](https://quarto.org)
   navbar:
