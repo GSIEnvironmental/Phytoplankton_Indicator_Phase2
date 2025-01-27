@@ -8,5 +8,5 @@ Imports:
     reactable,
     ggiraph,
     plotly,
-    htmltools
-  
+    htmltools,
+    tidyr

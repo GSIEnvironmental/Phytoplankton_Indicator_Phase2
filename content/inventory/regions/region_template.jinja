@@ -58,6 +58,69 @@ tagList(
 }
 
 ```
+Below are the total record counts for the region. Use the tabs to view summaries for each parameter.
+```{r}
+# Create Grand total of samples
+groupings <- data.frame(
+  table = c(
+    {% for group in groupings -%}
+      "{{ group.2 }}"{% if not loop.last %}, {% endif %}
+    {%- endfor %}
+  ),
+  parameter_col = c(
+    {% for group in groupings -%}
+      "{{ group.3 }}"{% if not loop.last %}, {% endif %}
+    {%- endfor %}
+  ),
+  parameter = c(
+    {% for group in groupings -%}
+      "{{ group.1 }}"{% if not loop.last %}, {% endif %}
+    {%- endfor %}
+  ),
+  data_type = c(
+    {% for group in groupings -%}
+      "{{ group.0 }}"{% if not loop.last %}, {% endif %}
+    {%- endfor %}
+  )
+) |> 
+  mutate(id = glue("{data_type}_{parameter}"))
+
+data_counts <- split(groupings, groupings$id) |> 
+  lapply(\(.data){
+    parameter <- .data$parameter
+    table <- .data$table
+    parameter_col <- .data$parameter_col
+    sql <- glue("
+select
+    {parameter_col} as parameter, 
+    count(*) as n_measurements
+from
+    {table}
+where
+    1=1
+    {% if region != 'Global' %}
+    and area_id = '{{ region }}'
+    {% endif %}
+    and {parameter_col} = '{parameter}'
+group by
+  {parameter_col}
+")
+    d <- get_data(sql)
+    if(nrow(d)==0){ # Ensure that no data is reported and not dropped.
+      d <- data.frame(parameter = parameter, n_measurements = 0L)
+    }
+    d
+  }) |> bind_rows(.id = "id") |> 
+  mutate(
+    id = gsub("_", "-", id),
+    n_measurements = format(as.numeric(n_measurements), big.mark = ",", scientific = FALSE)
+  ) |> 
+  select(-parameter)
+
+data_counts |> 
+  tidyr::pivot_wider(names_from = id, values_from = n_measurements) |> 
+  reactable::reactable(searchable = FALSE, showPageSizeOptions = FALSE)
+```
 ::: {.panel-tabset}
 
 {% for group in groupings %}
@@ -128,7 +191,7 @@ GROUP BY
 "
 
 data <-get_data(sql) |> 
-  mutate(tooltip = glue("Location ID: {location_id}<br>Location Description: {description}<br>Sampe Count: {record_count}"))
+  mutate(tooltip = glue("Location ID: {location_id}<br>Location Description: {description}<br>Measurement Count: {record_count}"))
 if(nrow(data) == 0) {
     cat("No data available")
 } else {
@@ -212,27 +275,28 @@ if(nrow(data) == 0) {
     cat("No data available")
 } else {
     # Define min and max depth for the x-axis
-x_min <- 0     # Minimum depth
-x_max <- 350   # Maximum depth
+min_depth <- 0     # Minimum depth
+max_depth <- 350   # Maximum depth
 
 # Create histogram
 plot_ly(
   data = data, 
-  x = ~upper_depth, 
+  y = ~upper_depth, 
   type = "histogram",
-  xbins = list(
-    start = x_min,  # Set bin start
-    end = x_max,    # Set bin end
+  ybins = list(
+    start = min_depth,  # Set bin start
+    end = max_depth,    # Set bin end
     size = 5        # Bin width of 5 meters
   )
 ) |> 
   layout(
     title = "{{group.1}} Measurements by Depth",
-    xaxis = list(
+    yaxis = list(
       title = glue("Depth ({toString(unique(data$depth_units))})"),
-      range = c(x_min, x_max)  # Ensure fixed depth range
+      range = c(min_depth, max_depth),  # Ensure fixed depth range
+      autorange = "reversed"  # Ensure depth increase downward
     ),
-    yaxis = list(title = "Number of Measurements", tickformat = ",d")
+    xaxis = list(title = "Number of Measurements", tickformat = ",d")
   )
 } 
 
