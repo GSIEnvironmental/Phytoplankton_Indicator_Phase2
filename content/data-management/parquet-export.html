@@ -564,10 +564,10 @@ Important
 <span id="cb2-228"><a href="#cb2-228" aria-hidden="true" tabindex="-1"></a><span class="st">            parameter in (</span></span>
 <span id="cb2-229"><a href="#cb2-229" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
 <span id="cb2-230"><a href="#cb2-230" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
-<span id="cb2-231"><a href="#cb2-231" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllFluor',</span></span>
-<span id="cb2-232"><a href="#cb2-232" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChloroFluor_adj',</span></span>
-<span id="cb2-233"><a href="#cb2-233" aria-hidden="true" tabindex="-1"></a><span class="st">                'Fluorescence_adj',</span></span>
-<span id="cb2-234"><a href="#cb2-234" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
+<span id="cb2-231"><a href="#cb2-231" aria-hidden="true" tabindex="-1"></a><span class="st">                'Fluorescence adjusted',</span></span>
+<span id="cb2-232"><a href="#cb2-232" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll Fluorescence Adjusted',</span></span>
+<span id="cb2-233"><a href="#cb2-233" aria-hidden="true" tabindex="-1"></a><span class="st">                'Beam Transmission',</span></span>
+<span id="cb2-234"><a href="#cb2-234" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll Fluorescence'</span></span>
 <span id="cb2-235"><a href="#cb2-235" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
 <span id="cb2-236"><a href="#cb2-236" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
 <span id="cb2-237"><a href="#cb2-237" aria-hidden="true" tabindex="-1"></a></span>
@@ -624,10 +624,10 @@ Important
 <span id="cb2-288"><a href="#cb2-288" aria-hidden="true" tabindex="-1"></a><span class="st">            parameter in (</span></span>
 <span id="cb2-289"><a href="#cb2-289" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
 <span id="cb2-290"><a href="#cb2-290" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
-<span id="cb2-291"><a href="#cb2-291" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllFluor',</span></span>
-<span id="cb2-292"><a href="#cb2-292" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChloroFluor_adj',</span></span>
-<span id="cb2-293"><a href="#cb2-293" aria-hidden="true" tabindex="-1"></a><span class="st">                'Fluorescence_adj',</span></span>
-<span id="cb2-294"><a href="#cb2-294" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
+<span id="cb2-291"><a href="#cb2-291" aria-hidden="true" tabindex="-1"></a><span class="st">                'Fluorescence adjusted',</span></span>
+<span id="cb2-292"><a href="#cb2-292" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll Fluorescence Adjusted',</span></span>
+<span id="cb2-293"><a href="#cb2-293" aria-hidden="true" tabindex="-1"></a><span class="st">                'Beam Transmission',</span></span>
+<span id="cb2-294"><a href="#cb2-294" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll Fluorescence'</span></span>
 <span id="cb2-295"><a href="#cb2-295" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
 <span id="cb2-296"><a href="#cb2-296" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
 <span id="cb2-297"><a href="#cb2-297" aria-hidden="true" tabindex="-1"></a></span>
@@ -705,12 +705,12 @@ Important
 <span id="cb2-369"><a href="#cb2-369" aria-hidden="true" tabindex="-1"></a><span class="st">            *</span></span>
 <span id="cb2-370"><a href="#cb2-370" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM app.bottle</span></span>
 <span id="cb2-371"><a href="#cb2-371" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE</span></span>
-<span id="cb2-372"><a href="#cb2-372" aria-hidden="true" tabindex="-1"></a><span class="st">            analyte in (</span></span>
-<span id="cb2-373"><a href="#cb2-373" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
-<span id="cb2-374"><a href="#cb2-374" aria-hidden="true" tabindex="-1"></a><span class="st">                'ChlorophyllA',</span></span>
-<span id="cb2-375"><a href="#cb2-375" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll',</span></span>
-<span id="cb2-376"><a href="#cb2-376" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll_Avg',</span></span>
-<span id="cb2-377"><a href="#cb2-377" aria-hidden="true" tabindex="-1"></a><span class="st">                'BeamTransmission'</span></span>
+<span id="cb2-372"><a href="#cb2-372" aria-hidden="true" tabindex="-1"></a><span class="st">            analyte_name in (</span></span>
+<span id="cb2-373"><a href="#cb2-373" aria-hidden="true" tabindex="-1"></a><span class="st">                'Beam Transmission',</span></span>
+<span id="cb2-374"><a href="#cb2-374" aria-hidden="true" tabindex="-1"></a><span class="st">                'Turbidity',</span></span>
+<span id="cb2-375"><a href="#cb2-375" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll a',</span></span>
+<span id="cb2-376"><a href="#cb2-376" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll Concentration',</span></span>
+<span id="cb2-377"><a href="#cb2-377" aria-hidden="true" tabindex="-1"></a><span class="st">                'Chlorophyll Average'</span></span>
 <span id="cb2-378"><a href="#cb2-378" aria-hidden="true" tabindex="-1"></a><span class="st">            )</span></span>
 <span id="cb2-379"><a href="#cb2-379" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span></span>
 <span id="cb2-380"><a href="#cb2-380" aria-hidden="true" tabindex="-1"></a></span>
