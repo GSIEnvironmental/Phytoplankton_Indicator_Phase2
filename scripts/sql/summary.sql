@@ -1,4 +1,4 @@
--- refresh materialized view app.ctd with data;
+-- refresh materialized view app.summary with data;
 
 drop materialized view if exists app.summary;
 create materialized view app.summary as
