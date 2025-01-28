@@ -255,10 +255,10 @@ def mooring_export() -> None:
             parameter in (
                 'Turbidity',
                 'Chlorophyll',
-                'ChlorophyllFluor',
-                'ChloroFluor_adj',
-                'Fluorescence_adj',
-                'BeamTransmission'
+                'Fluorescence adjusted',
+                'Chlorophyll Fluorescence Adjusted',
+                'Beam Transmission',
+                'Chlorophyll Fluorescence'
             )
     """
 
@@ -315,10 +315,10 @@ def ctd_export() -> None:
             parameter in (
                 'Turbidity',
                 'Chlorophyll',
-                'ChlorophyllFluor',
-                'ChloroFluor_adj',
-                'Fluorescence_adj',
-                'BeamTransmission'
+                'Fluorescence adjusted',
+                'Chlorophyll Fluorescence Adjusted',
+                'Beam Transmission',
+                'Chlorophyll Fluorescence'
             )
     """
 
@@ -396,12 +396,12 @@ def bottle_export() -> None:
             *
         FROM app.bottle
         WHERE
-            analyte in (
+            analyte_name in (
+                'Beam Transmission',
                 'Turbidity',
-                'ChlorophyllA',
-                'Chlorophyll',
-                'Chlorophyll_Avg',
-                'BeamTransmission'
+                'Chlorophyll a',
+                'Chlorophyll Concentration',
+                'Chlorophyll Average'
             )
     """
 
