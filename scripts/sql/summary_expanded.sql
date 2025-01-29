@@ -13,6 +13,9 @@ bottle_data as (
 			distinct extract(year from sample_date)::text,
 			'; ' order by extract(year from sample_date)::text
 		) as years_sampled,
+		string_agg(
+			distinct coll_scheme, '; ' order by coll_scheme
+		) as coll_scheme,
 		analyte_name as parameter,
 		string_agg(
 			distinct units, '; ' order by units
@@ -57,6 +60,9 @@ sp_abund_data as (
 			distinct extract(year from sample_date)::text,
 			'; ' order by extract(year from sample_date)::text
 		) as years_sampled,
+		string_agg(
+			distinct coll_scheme, '; ' order by coll_scheme
+		) as coll_scheme,
 		parameter || ' - ' || species as parameter,
 		string_agg(
 			distinct units, '; ' order by units
@@ -101,6 +107,9 @@ ctd_data as (
 			distinct extract(year from sample_date)::text,
 			'; ' order by extract(year from sample_date)::text
 		) as years_sampled,
+		string_agg(
+			distinct coll_scheme, '; ' order by coll_scheme
+		) as coll_scheme,
 		parameter,
 		string_agg(
 			distinct units, '; ' order by units
@@ -145,6 +154,9 @@ mooring_data as (
 			distinct extract(year from sample_date)::text,
 			'; ' order by extract(year from sample_date)::text
 		) as years_sampled,
+		string_agg(
+			distinct coll_scheme, '; ' order by coll_scheme
+		) as coll_scheme,
 		parameter,
 		string_agg(
 			distinct units, '; ' order by units
@@ -189,7 +201,9 @@ combined_data as (
 	select * from mooring_data
 )
 select
-	provider, data_type, document_title, files as document_files, years_sampled, parameter, units, n_measurements, "min", "max", "25th_percentile", "median", "75th_percentile"
+	provider, data_type, document_title, files as document_files,
+	years_sampled, coll_scheme, parameter, units, n_measurements,
+	"min", "max", "25th_percentile", "median", "75th_percentile"
 from combined_data
 order by
 	provider, data_type, document_title, parameter
