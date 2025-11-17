@@ -6,6 +6,43 @@ title: Data Analysis
 
 Users can manually download the data from the [S3 bucket](../../index.qmd#available-data).
 
+Data are stored as Parquet datasets in an S3 bucket with the following structure:
+
+```text
+s3://phyto-indicator/data/
+├── Bottle
+│   ├── _metadata
+│   ├── ...
+│   └── provider_key=Washington_Department_of_Ecology
+|       ├── year=XXXX
+|       │   └── *.parquet
+|       └── ...
+├── CTD
+│   ├── _metadata
+│   ├── ...
+│   └── provider_key=Washington_Department_of_Ecology
+|       ├── year=XXXX
+|       │   └── *.parquet
+|       └── ...
+├── Mooring
+│   ├── _metadata
+│   ├── ...
+│   └── provider_key=Washington_Department_of_Ecology
+|       ├── year=XXXX
+|       │   └── *.parquet
+|       └── ...
+├── Species_Abundance_Biovolume_Community
+│   ├── _metadata
+│   ├── ...
+│   └── provider_key=University_of_Washington
+|       ├── year=XXXX
+|       │   └── *.parquet
+|       └── ...
+└── Summary
+    ├── _metadata
+    └── *.parquet
+```
+
 Below are a few options for downloading the data:
 
 1. **[AWS CLI](https://aws.amazon.com/cli/)**: If you have the AWS CLI installed, you can use the following command to download the entire dataset:

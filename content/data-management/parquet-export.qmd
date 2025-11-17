@@ -32,6 +32,7 @@ import argparse
 import logging
 import shutil
 import tarfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
@@ -113,6 +114,15 @@ def clparser() -> argparse.ArgumentParser:
     return parser
 
 
+def get_connection():
+    return psycopg2.connect(
+        host=PG_HOST,
+        database=PG_DATABASE,
+        user=PG_USER,
+        password=PG_PASSWORD,
+    )
+
+
 def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
     dataset_dir = OUTDIR / dataset_name
     logger.info(f"Processing data for {dataset_dir}")
@@ -136,70 +146,62 @@ def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
     )
     metadata_collector = []
 
-    with conn.cursor(
-        name="phyto_db_large_export", cursor_factory=RealDictCursor
-    ) as cursor:
-        logger.info("Querying database...")
-        if dataset_name == "Summary":
-            cursor.execute(f"""
-                SELECT
-                    *
-                FROM (
-                    {sql}
-                ) as subquery
-            """
-            )
-            PARTITION_COLS.clear()
-        else:
-            cursor.execute(
-                f"""
-                SELECT
-                    *,
-                    replace(provider, ' ', '_') as provider_key,
-                    extract(year from sample_date)::integer as year
-                FROM (
-                    {sql}
-                ) as subquery
-            """
-            )
-        logger.info(f"Writing results to parquet in {dataset_dir}")
-        with tqdm(desc="Processing batches", unit=" batch") as pbar:
-            while True:
-                # Fetch a batch of rows
-                rows = cursor.fetchmany(BATCH_SIZE)
-                if not rows:
-                    break
-                # Convert fetched rows (list of dictionaries) to a pyarrow Table
-                # Convert dictionary rows to columns (pyarrow expects columns)
-                # batch_dict = {key: [row[key] for row in rows] for key in rows[0]}
-                # Ensure all keys exist in each batch to match the schema
-                batch_dict = {
-                    key: [row.get(key, None) for row in rows] for key in schema.names
-                }
-
-                table = pa.Table.from_pydict(batch_dict, schema=schema_with_metadata)
-                # Write Arrow Table to Parquet file (as part of a dataset)
-                pq.write_to_dataset(
-                    table=table,
-                    root_path=dataset_dir,
-                    compression="snappy",
-                    partition_cols=PARTITION_COLS,
-                    use_threads=True,
-                    metadata_collector=metadata_collector,
+    conn = get_connection()
+    try:
+        with conn.cursor(
+            name="phyto_db_large_export", cursor_factory=RealDictCursor
+        ) as cursor:
+            logger.info("Querying database...")
+            if dataset_name == "Summary":
+                cursor.execute(sql)
+            else:
+                cursor.execute(
+                    f"""
+                    SELECT
+                        *,
+                        replace(provider, ' ', '_') as provider_key,
+                        extract(year from sample_date)::integer as year
+                    FROM (
+                        {sql}
+                    ) as subquery
+                """
                 )
-                pbar.update(1)
+            logger.info(f"Writing results to parquet in {dataset_dir}")
+            with tqdm(desc=f"Processing batches ({dataset_name})", unit=" batch") as pbar:
+                while True:
+                    rows = cursor.fetchmany(BATCH_SIZE)
+                    if not rows:
+                        break
 
-            # Remove the partition columns from the schema
-            # so we can write the metadata file
-            for _ in range(len(PARTITION_COLS)):
-                schema = schema.remove(len(schema) - 1)
+                    batch_dict = {
+                        key: [row.get(key, None) for row in rows]
+                        for key in schema.names
+                    }
+
+                    table = pa.Table.from_pydict(batch_dict, schema=schema_with_metadata)
+                    pq.write_to_dataset(
+                        table=table,
+                        root_path=dataset_dir,
+                        compression="snappy",
+                        partition_cols=PARTITION_COLS if dataset_name != "Summary" else [],
+                        use_threads=True,
+                        metadata_collector=metadata_collector,
+                    )
+                    pbar.update(1)
+
+            # Decide which partition cols were actually used
+            used_partition_cols = PARTITION_COLS if dataset_name != "Summary" else []
+
+            # Work on a copy
+            meta_schema = schema
+            for _ in range(len(used_partition_cols)):
+                meta_schema = meta_schema.remove(len(meta_schema) - 1)
 
             for key, value in metadata.items():
                 metadata_collector[0].metadata[key] = str(value).encode("utf-8")
 
-            # Write combined metadata file
             pq.write_metadata(
-                schema=schema.with_metadata(
+                schema=meta_schema.with_metadata(
                     {k: str(v).encode("utf-8") for k, v in metadata.items()}
                 ),
                 where=f"{dataset_dir}/_metadata",
@@ -207,18 +209,20 @@ def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
             )
             logger.info(f"Metadata written to {dataset_dir / '_metadata'}")
 
-    logger.info("Dataset export complete")
-    meta = pq.read_metadata(dataset_dir / "_metadata")
-    ds = pq.ParquetDataset(dataset_dir)
-    logger.info(f"  num_files      : {len(ds.files)}")
-    logger.info(f"  format_version : {meta.format_version}")
-    logger.info(f"  num_columns    : {meta.num_columns}")
-    logger.info(f"  num_row_groups : {meta.num_row_groups}")
-    logger.info(f"  num_rows       : {meta.num_rows}")
+        logger.info("Dataset export complete")
+        meta = pq.read_metadata(dataset_dir / "_metadata")
+        ds = pq.ParquetDataset(dataset_dir)
+        logger.info(f"  num_files      : {len(ds.files)}")
+        logger.info(f"  format_version : {meta.format_version}")
+        logger.info(f"  num_columns    : {meta.num_columns}")
+        logger.info(f"  num_row_groups : {meta.num_row_groups}")
+        logger.info(f"  num_rows       : {meta.num_rows}")
 
-    for key, value in meta.metadata.items():
-        if "schema" not in key.decode("utf-8"):
-            logger.info(f"  {str(key.decode('utf-8')):<15}: {value.decode('utf-8')}")
+        for key, value in meta.metadata.items():
+            if "schema" not in key.decode("utf-8"):
+                logger.info(f"  {str(key.decode('utf-8')):<15}: {value.decode('utf-8')}")
+    finally:
+        conn.close()
 
 
 def mooring_export(filtered: bool = False) -> None:
@@ -443,6 +447,7 @@ def species_export(filtered: bool = False) -> None:
             ("srid", pa.int64()),
             ("coord_sys", pa.string()),
             ("loc_method", pa.string()),
+            ("provider", pa.string()),
             ("study_name", pa.string()),
             ("study_loc_id", pa.string()),
             ("sample_doc", pa.string()),
@@ -465,7 +470,8 @@ def species_export(filtered: bool = False) -> None:
             ("units", pa.string()),
             ("qualifiers", pa.string()),
             ("comments", pa.string()),
-            ("study_id", pa.dictionary(pa.int32(), pa.string())),
+            ("provider_key", pa.string()),
+            ("year", pa.int32()),
         ]
     )
     sql = """
@@ -530,16 +536,38 @@ def main():
     logger.info(f"Species Export : {_species_export}")
 
     start_time = datetime.now()
+    
+    jobs = []
+    
     if _summary_export:
-        summary_export()
+        jobs.append(("summary", summary_export, {}))
     if _bottle_export:
-        bottle_export(filtered=args.filtered)
+        jobs.append(("bottle", bottle_export, {"filtered": args.filtered}))
     if _mooring_export:
-        mooring_export(filtered=args.filtered)
+        jobs.append(("mooring", mooring_export, {"filtered": args.filtered}))
     if _ctd_export:
-        ctd_export(filtered=args.filtered)
+        jobs.append(("ctd", ctd_export, {"filtered": args.filtered}))
     if _species_export:
-        species_export(filtered=args.filtered)
+        jobs.append(("species", species_export, {"filtered": args.filtered}))
+        
+    if jobs:
+        max_workers = min(len(jobs), 4)
+        logger.info(f"Running {len(jobs)} exports jobs with up to {max_workers} concurrent workers...")
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(func, *func_args): name
+                for name, func, func_args in jobs
+            }
+
+            for future in as_completed(futures):
+                name = futures[future]
+                try:
+                    future.result()
+                    logger.info(f"{name} export finished successfully")
+                except Exception as e:
+                    logger.exception(f"{name} export failed: {e}")
+                    raise
+
     end_time = datetime.now()
     logger.info(f"Export completed in {(end_time - start_time) / 60}")
 
