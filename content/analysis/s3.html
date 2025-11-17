@@ -6,8 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="GSI Environmental Inc.">
+<meta name="dcterms.date" content="2025-11-17">
 
-<title>Data Analysis – Phytoplankton Indicator Phase 2</title>
+<title>S3 Data Upload and Download – Phytoplankton Indicator Phase 2</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -64,7 +66,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../">
-<link href="../../content/analysis/python-analysis.html" rel="next">
+<link href="../../content/analysis/python-analysis.html" rel="prev">
 <link href="../..//static/favicon.ico" rel="icon">
 <script src="../../site_libs/quarto-html/quarto.js"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
@@ -110,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <link rel="stylesheet" href="../../static/styles.css">
-<meta property="og:title" content="Data Analysis – Phytoplankton Indicator Phase 2">
+<meta property="og:title" content="S3 Data Upload and Download – Phytoplankton Indicator Phase 2">
 <meta property="og:description" content="Puget Sound Partnership Phytoplankton Indicator, Phase 2">
 <meta property="og:site_name" content="Phytoplankton Indicator Phase 2">
 </head>
@@ -162,7 +164,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../content/analysis/index.html">Data Analysis</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../content/analysis/s3.html">S3 Data Upload and Download</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -181,7 +183,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../../content/analysis/index.html" class="sidebar-item-text sidebar-link active">
+  <a href="../../content/analysis/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Data Analysis</span></a>
   </div>
 </li>
@@ -193,7 +195,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../../content/analysis/s3.html" class="sidebar-item-text sidebar-link">
+  <a href="../../content/analysis/s3.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">S3 Data Upload and Download</span></a>
   </div>
 </li>
@@ -207,7 +209,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#downloading-data" id="toc-downloading-data" class="nav-link active" data-scroll-target="#downloading-data">Downloading Data</a></li>
+  <li><a href="#parquet-upload-to-s3" id="toc-parquet-upload-to-s3" class="nav-link active" data-scroll-target="#parquet-upload-to-s3">Parquet Upload to S3</a></li>
+  <li><a href="#download-from-s3" id="toc-download-from-s3" class="nav-link" data-scroll-target="#download-from-s3">Download from S3</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -216,14 +219,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Data Analysis</h1>
+<h1 class="title">S3 Data Upload and Download</h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>GSI Environmental Inc. </p>
+          </div>
+  </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 17, 2025</p>
+    </div>
+  </div>
   
     
   </div>
@@ -233,50 +248,101 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="downloading-data" class="level2">
-<h2 class="anchored" data-anchor-id="downloading-data">Downloading Data</h2>
-<p>Users can manually download the data from the <a href="../../index.html#available-data">S3 bucket</a>.</p>
-<p>Data are stored as Parquet datasets in an S3 bucket with the following structure:</p>
-<pre class="text"><code>s3://phyto-indicator/data/
-├── Bottle
-│   ├── _metadata
-│   ├── ...
-│   └── provider_key=Washington_Department_of_Ecology
-|       ├── year=XXXX
-|       │   └── *.parquet
-|       └── ...
-├── CTD
-│   ├── _metadata
-│   ├── ...
-│   └── provider_key=Washington_Department_of_Ecology
-|       ├── year=XXXX
-|       │   └── *.parquet
-|       └── ...
-├── Mooring
-│   ├── _metadata
-│   ├── ...
-│   └── provider_key=Washington_Department_of_Ecology
-|       ├── year=XXXX
-|       │   └── *.parquet
-|       └── ...
-├── Species_Abundance_Biovolume_Community
-│   ├── _metadata
-│   ├── ...
-│   └── provider_key=University_of_Washington
-|       ├── year=XXXX
-|       │   └── *.parquet
-|       └── ...
-└── Summary
-    ├── _metadata
-    └── *.parquet</code></pre>
-<p>Below are a few options for downloading the data:</p>
-<ol type="1">
-<li><p><strong><a href="https://aws.amazon.com/cli/">AWS CLI</a></strong>: If you have the AWS CLI installed, you can use the following command to download the entire dataset:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> s3 cp <span class="at">--recursive</span> s3://phyto-indicator/data/ ./local-data-directory/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
-<li><p><strong><a href="https://cyberduck.io/">Cyberduck</a></strong>: A user-friendly GUI tool that allows you to connect to S3 buckets and download files via drag-and-drop.</p></li>
-<li><p><strong><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3 (Python)</a></strong>: You can use the Boto3 library in Python to programmatically download the data. Check out the <a href="./content/analysis/s3.ipynb">s3.ipynb</a> notebook for an example of how to do this.</p></li>
-</ol>
-<p>Once the data is downloaded, you can read the Parquet files using libraries such as <a href="https://pola-rs.github.io/polars-book/user-guide/io/parquet.html">Polars</a> or <a href="https://pandas.pydata.org/docs/reference/api/pandas.read_parquet.html">Pandas</a>. A <a href="./content/analysis/python-analysis.ipynb">Python notebook</a> is provided to assist with reading the downloaded Parquet files.</p>
+<p>This page provides simple examples of how to upload and download Parquet files to and from an AWS S3 bucket using the Boto3 library in Python.</p>
+<section id="parquet-upload-to-s3" class="level2">
+<h2 class="anchored" data-anchor-id="parquet-upload-to-s3">Parquet Upload to S3</h2>
+<p>Note that in order to upload files to S3, you need to have AWS credentials configured. You can set up your credentials using the AWS CLI or by setting environment variables. This example assumes you have the necessary permissions to upload files to the specified S3 bucket.</p>
+<div id="c6314de3" class="cell">
+<div class="sourceCode cell-code" id="c6314de3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="c6314de3-1"><a href="#c6314de3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="c6314de3-2"><a href="#c6314de3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="c6314de3-3"><a href="#c6314de3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c6314de3-4"><a href="#c6314de3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> boto3</span>
+<span id="c6314de3-5"><a href="#c6314de3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c6314de3-6"><a href="#c6314de3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># AWS S3 configuration</span></span>
+<span id="c6314de3-7"><a href="#c6314de3-7" aria-hidden="true" tabindex="-1"></a>AWS_ACCESS_KEY_ID <span class="op">=</span> os.getenv(<span class="st">"AWS_ACCESS_KEY_ID"</span>)</span>
+<span id="c6314de3-8"><a href="#c6314de3-8" aria-hidden="true" tabindex="-1"></a>AWS_SECRET_ACCESS_KEY <span class="op">=</span> os.getenv(<span class="st">"AWS_SECRET_ACCESS_KEY"</span>)</span>
+<span id="c6314de3-9"><a href="#c6314de3-9" aria-hidden="true" tabindex="-1"></a>AWS_S3_BUCKET <span class="op">=</span> os.getenv(<span class="st">"AWS_S3_BUCKET"</span>, <span class="st">"phyto-indicator"</span>)</span>
+<span id="c6314de3-10"><a href="#c6314de3-10" aria-hidden="true" tabindex="-1"></a>AWS_S3_PREFIX <span class="op">=</span> <span class="st">"data/"</span></span>
+<span id="c6314de3-11"><a href="#c6314de3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c6314de3-12"><a href="#c6314de3-12" aria-hidden="true" tabindex="-1"></a>DATA_DIR <span class="op">=</span> Path.cwd().parent.parent <span class="op">/</span> <span class="st">"phyto-indicator-data"</span></span>
+<span id="c6314de3-13"><a href="#c6314de3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c6314de3-14"><a href="#c6314de3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c6314de3-15"><a href="#c6314de3-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> s3_upload_parquet_files(</span>
+<span id="c6314de3-16"><a href="#c6314de3-16" aria-hidden="true" tabindex="-1"></a>    bucket: <span class="bu">str</span> <span class="op">=</span> AWS_S3_BUCKET, prefix: <span class="bu">str</span> <span class="op">=</span> AWS_S3_PREFIX, local_dir: Path <span class="op">=</span> DATA_DIR</span>
+<span id="c6314de3-17"><a href="#c6314de3-17" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="c6314de3-18"><a href="#c6314de3-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Upload Parquet files from local directory to S3 bucket.</span></span>
+<span id="c6314de3-19"><a href="#c6314de3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c6314de3-20"><a href="#c6314de3-20" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="c6314de3-21"><a href="#c6314de3-21" aria-hidden="true" tabindex="-1"></a><span class="co">    -----</span></span>
+<span id="c6314de3-22"><a href="#c6314de3-22" aria-hidden="true" tabindex="-1"></a><span class="co">        bucket (str): Name of the S3 bucket.</span></span>
+<span id="c6314de3-23"><a href="#c6314de3-23" aria-hidden="true" tabindex="-1"></a><span class="co">        prefix (str): S3 prefix (folder path) to upload files to.</span></span>
+<span id="c6314de3-24"><a href="#c6314de3-24" aria-hidden="true" tabindex="-1"></a><span class="co">        local_dir (Path): Local directory containing Parquet files.</span></span>
+<span id="c6314de3-25"><a href="#c6314de3-25" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="c6314de3-26"><a href="#c6314de3-26" aria-hidden="true" tabindex="-1"></a>    s3_client <span class="op">=</span> boto3.client(</span>
+<span id="c6314de3-27"><a href="#c6314de3-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">"s3"</span>,</span>
+<span id="c6314de3-28"><a href="#c6314de3-28" aria-hidden="true" tabindex="-1"></a>        region_name<span class="op">=</span><span class="st">"us-west-2"</span>,</span>
+<span id="c6314de3-29"><a href="#c6314de3-29" aria-hidden="true" tabindex="-1"></a>        aws_access_key_id<span class="op">=</span>AWS_ACCESS_KEY_ID,</span>
+<span id="c6314de3-30"><a href="#c6314de3-30" aria-hidden="true" tabindex="-1"></a>        aws_secret_access_key<span class="op">=</span>AWS_SECRET_ACCESS_KEY,</span>
+<span id="c6314de3-31"><a href="#c6314de3-31" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="c6314de3-32"><a href="#c6314de3-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> dataset_dir <span class="kw">in</span> DATA_DIR.iterdir():</span>
+<span id="c6314de3-33"><a href="#c6314de3-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> dataset_dir.is_dir():</span>
+<span id="c6314de3-34"><a href="#c6314de3-34" aria-hidden="true" tabindex="-1"></a>            dataset_name <span class="op">=</span> dataset_dir.name</span>
+<span id="c6314de3-35"><a href="#c6314de3-35" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"Uploading dataset </span><span class="sc">{</span>dataset_name<span class="sc">}</span><span class="ss"> to S3..."</span>)</span>
+<span id="c6314de3-36"><a href="#c6314de3-36" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> root, _, files <span class="kw">in</span> os.walk(dataset_dir):</span>
+<span id="c6314de3-37"><a href="#c6314de3-37" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> <span class="bu">file</span> <span class="kw">in</span> files:</span>
+<span id="c6314de3-38"><a href="#c6314de3-38" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> <span class="bu">file</span>.endswith(<span class="st">".parquet"</span>):</span>
+<span id="c6314de3-39"><a href="#c6314de3-39" aria-hidden="true" tabindex="-1"></a>                        file_path <span class="op">=</span> Path(root) <span class="op">/</span> <span class="bu">file</span></span>
+<span id="c6314de3-40"><a href="#c6314de3-40" aria-hidden="true" tabindex="-1"></a>                        s3_key <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>AWS_S3_PREFIX<span class="sc">}{</span>dataset_name<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>file_path<span class="sc">.</span>relative_to(dataset_dir)<span class="sc">}</span><span class="ss">"</span></span>
+<span id="c6314de3-41"><a href="#c6314de3-41" aria-hidden="true" tabindex="-1"></a>                        <span class="bu">print</span>(</span>
+<span id="c6314de3-42"><a href="#c6314de3-42" aria-hidden="true" tabindex="-1"></a>                            <span class="ss">f"Uploading </span><span class="sc">{</span>file_path<span class="sc">}</span><span class="ss"> to s3://</span><span class="sc">{</span>AWS_S3_BUCKET<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>s3_key<span class="sc">}</span><span class="ss">..."</span></span>
+<span id="c6314de3-43"><a href="#c6314de3-43" aria-hidden="true" tabindex="-1"></a>                        )</span>
+<span id="c6314de3-44"><a href="#c6314de3-44" aria-hidden="true" tabindex="-1"></a>                        s3_client.upload_file(</span>
+<span id="c6314de3-45"><a href="#c6314de3-45" aria-hidden="true" tabindex="-1"></a>                            Filename<span class="op">=</span><span class="bu">str</span>(file_path),</span>
+<span id="c6314de3-46"><a href="#c6314de3-46" aria-hidden="true" tabindex="-1"></a>                            Bucket<span class="op">=</span>AWS_S3_BUCKET,</span>
+<span id="c6314de3-47"><a href="#c6314de3-47" aria-hidden="true" tabindex="-1"></a>                            Key<span class="op">=</span>s3_key,</span>
+<span id="c6314de3-48"><a href="#c6314de3-48" aria-hidden="true" tabindex="-1"></a>                        )</span>
+<span id="c6314de3-49"><a href="#c6314de3-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c6314de3-50"><a href="#c6314de3-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c6314de3-51"><a href="#c6314de3-51" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="c6314de3-52"><a href="#c6314de3-52" aria-hidden="true" tabindex="-1"></a>    s3_upload_parquet_files(</span>
+<span id="c6314de3-53"><a href="#c6314de3-53" aria-hidden="true" tabindex="-1"></a>        bucket<span class="op">=</span>AWS_S3_BUCKET,</span>
+<span id="c6314de3-54"><a href="#c6314de3-54" aria-hidden="true" tabindex="-1"></a>        prefix<span class="op">=</span>AWS_S3_PREFIX,</span>
+<span id="c6314de3-55"><a href="#c6314de3-55" aria-hidden="true" tabindex="-1"></a>        local_dir<span class="op">=</span>DATA_DIR,</span>
+<span id="c6314de3-56"><a href="#c6314de3-56" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="download-from-s3" class="level2">
+<h2 class="anchored" data-anchor-id="download-from-s3">Download from S3</h2>
+<p>This example demonstrates how to download Parquet files from an S3 bucket using Boto3. The example assumes the bucket you are trying to access is public. If the bucket is private, make sure you have the necessary permissions to access the specified S3 bucket and download files.</p>
+<div id="56db4a0f" class="cell">
+<div class="sourceCode cell-code" id="56db4a0f"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="56db4a0f-1"><a href="#56db4a0f-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="56db4a0f-2"><a href="#56db4a0f-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> boto3</span>
+<span id="56db4a0f-3"><a href="#56db4a0f-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="56db4a0f-4"><a href="#56db4a0f-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="56db4a0f-5"><a href="#56db4a0f-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> s3_download(bucket: <span class="bu">str</span>, prefix: <span class="bu">str</span>, local_dir: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="56db4a0f-6"><a href="#56db4a0f-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Download files from S3 bucket to local directory.</span></span>
+<span id="56db4a0f-7"><a href="#56db4a0f-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="56db4a0f-8"><a href="#56db4a0f-8" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="56db4a0f-9"><a href="#56db4a0f-9" aria-hidden="true" tabindex="-1"></a><span class="co">        bucket (str): Name of the S3 bucket.</span></span>
+<span id="56db4a0f-10"><a href="#56db4a0f-10" aria-hidden="true" tabindex="-1"></a><span class="co">        prefix (str): S3 prefix (folder path) to download files from.</span></span>
+<span id="56db4a0f-11"><a href="#56db4a0f-11" aria-hidden="true" tabindex="-1"></a><span class="co">        local_dir (str): Local directory to save downloaded files.</span></span>
+<span id="56db4a0f-12"><a href="#56db4a0f-12" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="56db4a0f-13"><a href="#56db4a0f-13" aria-hidden="true" tabindex="-1"></a>    s3 <span class="op">=</span> boto3.client(<span class="st">"s3"</span>, region_name<span class="op">=</span><span class="st">"us-west-2"</span>)</span>
+<span id="56db4a0f-14"><a href="#56db4a0f-14" aria-hidden="true" tabindex="-1"></a>    paginator <span class="op">=</span> s3.get_paginator(<span class="st">"list_objects_v2"</span>)</span>
+<span id="56db4a0f-15"><a href="#56db4a0f-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> page <span class="kw">in</span> paginator.paginate(Bucket<span class="op">=</span>bucket, Prefix<span class="op">=</span>prefix):</span>
+<span id="56db4a0f-16"><a href="#56db4a0f-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> obj <span class="kw">in</span> page.get(<span class="st">"Contents"</span>, []):</span>
+<span id="56db4a0f-17"><a href="#56db4a0f-17" aria-hidden="true" tabindex="-1"></a>            key <span class="op">=</span> obj[<span class="st">"Key"</span>]</span>
+<span id="56db4a0f-18"><a href="#56db4a0f-18" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> key.endswith(<span class="st">"/"</span>):</span>
+<span id="56db4a0f-19"><a href="#56db4a0f-19" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="56db4a0f-20"><a href="#56db4a0f-20" aria-hidden="true" tabindex="-1"></a>            local_path <span class="op">=</span> os.path.join(local_dir, key)</span>
+<span id="56db4a0f-21"><a href="#56db4a0f-21" aria-hidden="true" tabindex="-1"></a>            os.makedirs(os.path.dirname(local_path), exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="56db4a0f-22"><a href="#56db4a0f-22" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"Downloading </span><span class="sc">{</span>key<span class="sc">}</span><span class="ss"> -&gt; </span><span class="sc">{</span>local_path<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="56db4a0f-23"><a href="#56db4a0f-23" aria-hidden="true" tabindex="-1"></a>            s3.download_file(bucket, key, local_path)</span>
+<span id="56db4a0f-24"><a href="#56db4a0f-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="56db4a0f-25"><a href="#56db4a0f-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="56db4a0f-26"><a href="#56db4a0f-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="56db4a0f-27"><a href="#56db4a0f-27" aria-hidden="true" tabindex="-1"></a>    s3_download(bucket<span class="op">=</span><span class="st">"phyto-indicator"</span>, prefix<span class="op">=</span><span class="st">"data/"</span>, local_dir<span class="op">=</span><span class="st">"./local-dir"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
 <script type="ojs-module-contents">
@@ -731,11 +797,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
+      <a href="../../content/analysis/python-analysis.html" class="pagination-link" aria-label="Reading Parquet Datasets using Python">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Reading Parquet Datasets using Python</span>
+      </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../../content/analysis/python-analysis.html" class="pagination-link" aria-label="Reading Parquet Datasets using Python">
-        <span class="nav-page-text">Reading Parquet Datasets using Python</span> <i class="bi bi-arrow-right-short"></i>
-      </a>
   </div>
 </nav>
 </div> <!-- /content -->
