@@ -274,9 +274,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p><strong><a href="https://aws.amazon.com/cli/">AWS CLI</a></strong>: If you have the AWS CLI installed, you can use the following command to download the entire dataset:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> s3 cp <span class="at">--recursive</span> s3://phyto-indicator/data/ ./local-data-directory/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
 <li><p><strong><a href="https://cyberduck.io/">Cyberduck</a></strong>: A user-friendly GUI tool that allows you to connect to S3 buckets and download files via drag-and-drop.</p></li>
-<li><p><strong><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3 (Python)</a></strong>: You can use the Boto3 library in Python to programmatically download the data. Check out the <a href="./content/analysis/s3.ipynb">s3.ipynb</a> notebook for an example of how to do this.</p></li>
+<li><p><strong><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto3 (Python)</a></strong>: You can use the Boto3 library in Python to programmatically download the data. Check out the <a href="./content/analysis/s3.html">S3</a> notebook for an example of how to do this.</p></li>
 </ol>
-<p>Once the data is downloaded, you can read the Parquet files using libraries such as <a href="https://pola-rs.github.io/polars-book/user-guide/io/parquet.html">Polars</a> or <a href="https://pandas.pydata.org/docs/reference/api/pandas.read_parquet.html">Pandas</a>. A <a href="./content/analysis/python-analysis.ipynb">Python notebook</a> is provided to assist with reading the downloaded Parquet files.</p>
+<p>Once the data is downloaded, you can read the Parquet files using libraries such as <a href="https://pola-rs.github.io/polars-book/user-guide/io/parquet.html">Polars</a> or <a href="https://pandas.pydata.org/docs/reference/api/pandas.read_parquet.html">Pandas</a>. A <a href="./content/analysis/python-analysis.html">Python notebook</a> is provided to assist with reading the downloaded Parquet files.</p>
 
 
 <script type="ojs-module-contents">
