@@ -18,3 +18,5 @@ content/inventory/regions/*
 # Un-ignore specific files
 !content/inventory/regions/groupings.csv
 !content/inventory/regions/region_template.jinja
+
+**/*.quarto_ipynb

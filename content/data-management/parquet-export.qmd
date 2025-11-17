@@ -11,7 +11,7 @@ This code references materialized views in the project database. SQL code used t
 
 ## Python Setup
 
-1. Install Python version 3.10, 3.11, or 3.12.
+1. Install Python version 3.10, 3.11, 3.12, or 3.13.
 2. Install required dependencies: `python -m pip install numexpr psycopg2-binary pyarrow python-dotenv tqdm polars`
 3. Create a `.env` file in the same directory as this notebook with the following keys:
 
@@ -30,7 +30,6 @@ This code references materialized views in the project database. SQL code used t
 # Standard libraries
 import argparse
 import logging
-import os
 import shutil
 import tarfile
 from datetime import datetime
@@ -38,7 +37,6 @@ from pathlib import Path
 
 # Third party libraries
 import numexpr as ne
-import polars as pl
 import psycopg2
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -102,9 +100,14 @@ def clparser() -> argparse.ArgumentParser:
         description="Export data from PostgreSQL to Parquet files. If the summary dataset is selected, data inventory summary will be exported in CSV format."
     )
     parser.add_argument(
+        "--filtered",
+        action="store_true",
+        help="Export only filtered parameters for bottle, mooring, and ctd datasets",
+    )
+    parser.add_argument(
         "dataset",
         type=str,
-        choices=["bottle", "mooring", "ctd", "summary", "all"],
+        choices=["bottle", "mooring", "ctd", "species", "summary", "all"],
         help="Dataset to export",
     )
     return parser
@@ -121,7 +124,11 @@ def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
 
     metadata = {
         "dataset_name": dataset_name,
-        "author": "GSI Environmental Inc.",
+        "project": "Phytoplankton Vital Signs Indicator Project: Phase 2",
+        "sponsor": "Puget Sound Partnership",
+        "institutions": "GSI Environmental Inc., University of Washington, Washington Department of Ecology",
+        "principal_investigator": "Dr. Brandon Sackmann (bssackmann@gsi-net.com)",
+        "data_manager": "Caleb Grant (cgrant@gsi-net.com)",
         "created_at": datetime.now().isoformat(),
     }
     schema_with_metadata = schema.with_metadata(
@@ -133,19 +140,28 @@ def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
         name="phyto_db_large_export", cursor_factory=RealDictCursor
     ) as cursor:
         logger.info("Querying database...")
-        cursor.execute(
-            f"""
-            SELECT
-                *,
-                replace(provider, ' ', '_') as provider_key,
-                extract(year from sample_date)::integer as year
-            FROM (
-                {sql}
-            ) as subquery
-            WHERE
-                extract(year from sample_date) >= 1999
-        """
-        )
+        if dataset_name == "Summary":
+            cursor.execute(f"""
+                SELECT
+                    *
+                FROM (
+                    {sql}
+                ) as subquery
+            """
+            )
+            PARTITION_COLS.clear()
+        else:
+            cursor.execute(
+                f"""
+                SELECT
+                    *,
+                    replace(provider, ' ', '_') as provider_key,
+                    extract(year from sample_date)::integer as year
+                FROM (
+                    {sql}
+                ) as subquery
+            """
+            )
         logger.info(f"Writing results to parquet in {dataset_dir}")
         with tqdm(desc="Processing batches", unit=" batch") as pbar:
             while True:
@@ -205,7 +221,7 @@ def postgres_to_parquet(dataset_name: str, sql: str, schema: list) -> None:
             logger.info(f"  {str(key.decode('utf-8')):<15}: {value.decode('utf-8')}")
 
 
-def mooring_export() -> None:
+def mooring_export(filtered: bool = False) -> None:
     dataset_name = "Mooring"
     schema = pa.schema(
         [
@@ -251,21 +267,24 @@ def mooring_export() -> None:
         SELECT
             *
         FROM app.mooring
-        WHERE
-            parameter in (
-                'Turbidity',
-                'Chlorophyll',
-                'Fluorescence adjusted',
-                'Chlorophyll Fluorescence Adjusted',
-                'Beam Transmission',
-                'Chlorophyll Fluorescence'
-            )
     """
+    if filtered:
+        sql += """
+            WHERE
+                parameter in (
+                    'Turbidity',
+                    'Chlorophyll',
+                    'Fluorescence adjusted',
+                    'Chlorophyll Fluorescence Adjusted',
+                    'Beam Transmission',
+                    'Chlorophyll Fluorescence'
+                )
+        """
 
     postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
 
 
-def ctd_export() -> None:
+def ctd_export(filtered: bool = False) -> None:
     dataset_name = "CTD"
     schema = pa.schema(
         [
@@ -311,21 +330,24 @@ def ctd_export() -> None:
         SELECT
             *
         FROM app.ctd
-        WHERE
-            parameter in (
-                'Turbidity',
-                'Chlorophyll',
-                'Fluorescence adjusted',
-                'Chlorophyll Fluorescence Adjusted',
-                'Beam Transmission',
-                'Chlorophyll Fluorescence'
-            )
     """
+    if filtered:
+        sql += """
+            WHERE
+                parameter in (
+                    'Turbidity',
+                    'Chlorophyll',
+                    'Fluorescence adjusted',
+                    'Chlorophyll Fluorescence Adjusted',
+                    'Beam Transmission',
+                    'Chlorophyll Fluorescence'
+                )
+        """
 
     postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
 
 
-def bottle_export() -> None:
+def bottle_export(filtered: bool = False) -> None:
     dataset_name = "Bottle"
     schema = pa.schema(
         [
@@ -389,35 +411,97 @@ def bottle_export() -> None:
         ]
     )
 
-    dataset_name = "Bottle"
-
     sql = """
         SELECT
             *
         FROM app.bottle
-        WHERE
-            analyte_name in (
-                'Beam Transmission',
-                'Turbidity',
-                'Chlorophyll a',
-                'Chlorophyll Concentration',
-                'Chlorophyll Average'
-            )
     """
+    if filtered:
+        sql += """
+            WHERE
+                analyte_name in (
+                    'Beam Transmission',
+                    'Turbidity',
+                    'Chlorophyll a',
+                    'Chlorophyll Concentration',
+                    'Chlorophyll Average'
+                )
+        """
 
+    postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
+
+def species_export(filtered: bool = False) -> None:
+    dataset_name = "Species_Abundance_Biovolume_Community"
+    schema = pa.schema(
+        [
+            ("area_id", pa.string()),
+            ("location_id", pa.string()),
+            ("loc_desc", pa.string()),
+            ("loc_type", pa.string()),
+            ("x_coord", pa.float64()),
+            ("y_coord", pa.float64()),
+            ("srid", pa.int64()),
+            ("coord_sys", pa.string()),
+            ("loc_method", pa.string()),
+            ("study_name", pa.string()),
+            ("study_loc_id", pa.string()),
+            ("sample_doc", pa.string()),
+            ("sample_date", pa.timestamp('us')),
+            ("coll_scheme", pa.string()),
+            ("sample_material", pa.string()),
+            ("sample_id", pa.string()),
+            ("sample_desc", pa.string()),
+            ("upper_depth", pa.float64()),
+            ("lower_depth", pa.float64()),
+            ("depth_units", pa.string()),
+            ("taxon_code", pa.string()),
+            ("species", pa.string()),
+            ("common_name", pa.string()),
+            ("sex", pa.string()),
+            ("life_stage", pa.string()),
+            ("parameter", pa.string()),
+            ("replicate", pa.string()),
+            ("result", pa.float64()),
+            ("units", pa.string()),
+            ("qualifiers", pa.string()),
+            ("comments", pa.string()),
+            ("study_id", pa.dictionary(pa.int32(), pa.string())),
+        ]
+    )
+    sql = """
+        SELECT
+            *
+        FROM app.sp_abund
+    """
     postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
 
 
 def summary_export() -> None:
-    outfile = (
-        OUTDIR
-        / f"Phyto-Indicator-Summary_{datetime.now().date().strftime('%Y%m%d')}.csv"
+    dataset_name = "Summary"
+    schema = pa.schema(
+        [
+            ("provider", pa.string()),
+            ("data_type", pa.string()),
+            ("document_title", pa.string()),
+            ("document_files", pa.string()),
+            ("years_sampled", pa.string()),
+            ("coll_scheme", pa.string()),
+            ("parameter", pa.string()),
+            ("units", pa.string()),
+            ("n_measurements", pa.int64()),
+            ("min", pa.float64()),
+            ("max", pa.float64()),
+            ("25th_percentile", pa.float64()),
+            ("median", pa.float64()),
+            ("75th_percentile", pa.float64()),
+        ]
     )
-    pl.read_database_uri(
-        "SELECT * FROM app.summary",
-        uri=f"postgresql://{PG_USER}:{PG_PASSWORD}@{PG_HOST}/{PG_DATABASE}",
-        engine="connectorx",
-    ).write_csv(outfile, separator=",")
+    sql = """
+        SELECT
+            *
+        FROM app.summary_expanded
+    """
+    postgres_to_parquet(dataset_name=dataset_name, sql=sql, schema=schema)
 
 
 def main():
@@ -425,6 +509,7 @@ def main():
     _bottle_export = False
     _mooring_export = False
     _ctd_export = False
+    _species_export = False
     _summary_export = False
     if args.dataset == "bottle" or args.dataset == "all":
         _bottle_export = True
@@ -432,6 +517,8 @@ def main():
         _mooring_export = True
     if args.dataset == "ctd" or args.dataset == "all":
         _ctd_export = True
+    if args.dataset == "species" or args.dataset == "all":
+        _species_export = True
     if args.dataset == "summary" or args.dataset == "all":
         _summary_export = True
 
@@ -440,16 +527,19 @@ def main():
     logger.info(f"Bottle Export  : {_bottle_export}")
     logger.info(f"Mooring Export : {_mooring_export}")
     logger.info(f"CTD Export     : {_ctd_export}")
+    logger.info(f"Species Export : {_species_export}")
 
     start_time = datetime.now()
     if _summary_export:
         summary_export()
     if _bottle_export:
-        bottle_export()
+        bottle_export(filtered=args.filtered)
     if _mooring_export:
-        mooring_export()
+        mooring_export(filtered=args.filtered)
     if _ctd_export:
-        ctd_export()
+        ctd_export(filtered=args.filtered)
+    if _species_export:
+        species_export(filtered=args.filtered)
     end_time = datetime.now()
     logger.info(f"Export completed in {(end_time - start_time) / 60}")
 

@@ -36,6 +36,14 @@ The Phytoplankton Vital Sign Project is curating phytoplankton-related data from
 
 The [Phytoplankton Data Inventory](./content/inventory/index.qmd) will help improve understanding of the different methods being used across programs for collecting phytoplankton-related data. The [Phytoplankton Monitoring Database](./content/data-management/index.qmd) will allow the project team to conduct statistical analyses of data to identify spatial and temporal patterns, trends in phytoplankton community metrics, and identify gaps in monitoring data. The inventory and database together will inform future Phase 3 work to create a single, large-scale regional metric (Vital Sign) for communicating ecosystem-scale status, trends and recovery in Puget Sound related to the phytoplankton community.
 
+## Phase 2 Final Report
+
+The Phase 2 Final Report for the Phytoplankton Vital Sign Indicator is available for download: [Phytoplankton Vital Sign Phase 2 Final Report (PDF)](https://pspwa.app.box.com/s/3gvcmhn4o4wfporh7uzcb2w6fzy7nkss/file/2046671963358).
+
+## Available Data
+
+The curated phytoplankton data are available in a public S3 bucket in Parquet file format. The Parquet files are organized by dataset type, including bottle data, CTD data, mooring data, species abundance/biovolume/community metrics, and summary statistics. The S3 bucket can be accessed at: `s3://phyto-indicator/data/`. See the [Data Analysis](./content/analysis/index.qmd) page for instructions on downloading and working with the data.
+
 ## Geographic Coverage
 
 Based on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay).
