@@ -25,7 +25,7 @@ execute:
 website:
   title: "Phytoplankton Indicator Phase 2"
   description: "Puget Sound Partnership Phytoplankton Indicator, Phase 2"
-  favicon: /static/favicon.ico
+  favicon: /static/logo_phytoindicator.svg
   page-navigation: true
   back-to-top-navigation: false
   repo-url: https://github.com/GSIEnvironmental/Phytoplankton_Indicator_Phase2
@@ -33,8 +33,8 @@ website:
   open-graph: true
   bread-crumbs: true
   search:
-    location: navbar
-    type: overlay
+    location: sidebar
+    type: textbox
     copy-button: true
     keyboard-shortcut: ["/", "H"]
     show-item-context: true
