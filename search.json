@@ -65,7 +65,7 @@
     "href": "index.html#geographic-coverage",
     "title": "Phytoplankton Indicator",
     "section": "Geographic Coverage",
-    "text": "Geographic Coverage\nBased on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay).\n\n\n/tmp/ipykernel_3128390/3108755020.py:32: DeprecationWarning:\n\n*scatter_mapbox* is deprecated! Use *scatter_map* instead. Learn more at: https://plotly.com/python/mapbox-to-maplibre/"
+    "text": "Geographic Coverage\nBased on previous work by GSI, data have been grouped into seven sub-regions representing basins and other oceanographic attributes of the inland waters of Puget Sound/Salish Sea. These include five Puget Sound sub-regions (South Sound, Main Basin, Hood Canal, Admiralty Inlet, Whidbey Basin) and two additional north sound sub-basins (Strait of Juan de Fuca, Bellingham Bay)."
   },
   {
     "objectID": "content/inventory/regions/washington-coast-slope.html",
